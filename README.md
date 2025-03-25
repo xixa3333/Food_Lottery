@@ -72,7 +72,7 @@ javascript:(function(){var whateat=prompt("你要查什麼？");if(!whateat)retu
    - 在瀏覽器中新增書籤，將程式碼貼至「網址」欄，命名為「餐廳隨機挑選器」。
 
 2. **執行步驟**：
-   - 開啟 Google Maps（`https://www.google.com/maps`）。
+   - 開啟 網頁版的Google Maps（`https://www.google.com/maps`）。
    - 點擊書籤，依提示輸入：
      - 想吃的食物類型（例如「披薩」）。
      - 最低星級（例如 `4`）。
