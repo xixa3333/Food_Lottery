@@ -85,7 +85,8 @@ javascript:(function(){var whateat=prompt("你要查什麼？");if(!whateat)retu
 - **選擇器相容性**：若 Google Maps 更新 DOM 結構，需調整程式碼中的選擇器。
 - **營業狀態**：僅篩選「營業中」或「即將開始營業」的餐廳。
 - **滾動限制**：預設滾動 20 次，可能無法載入所有結果。
-- **確認定位，右下角記得打開**:![image](https://github.com/xixa3333/Food_Lottery/blob/master/S__16998535.jpg)
+- **確認定位，右下角記得打開**:
+- <img src="https://github.com/xixa3333/Food_Lottery/blob/master/S__16998535.jpg" alt="image" width="250" height="500">
 
 ---
 
