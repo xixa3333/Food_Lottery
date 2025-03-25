@@ -104,7 +104,3 @@ javascript:(function(){var whateat=prompt("你要查什麼？");if(!whateat)retu
 
 ## 聯絡方式
 若有問題或建議，歡迎開啟 [Issue](https://github.com/yourusername/yourrepo/issues) 或聯繫作者！
-
----
-
-這樣的 README 將兩個工具整合於同一專案，清楚區分功能、使用方式和注意事項，並提供比較表格幫助使用者選擇。如果您有其他需求（例如新增範例圖片、調整格式），請告訴我！
