@@ -2,6 +2,7 @@ import importlib.util
 import pathlib
 import sys
 import unittest
+from unittest.mock import patch
 
 MODULE_PATH = pathlib.Path(__file__).parents[1] / "app" / "food_lottery.py"
 SPEC = importlib.util.spec_from_file_location("food_lottery", MODULE_PATH)
@@ -29,6 +30,14 @@ class FoodLotteryTests(unittest.TestCase):
         ]
         self.assertEqual(["紅火鍋"], [v.name for v in food_lottery.filter_venues(venues, "火鍋", 4)])
         self.assertEqual(2, len(food_lottery.filter_venues(venues, "", 0)))
+
+    @patch.object(food_lottery, "get_json")
+    def test_network_location(self, get_json):
+        get_json.return_value = {
+            "success": True, "latitude": 22.6, "longitude": 120.3,
+            "city": "Kaohsiung", "region": "Kaohsiung", "country": "Taiwan",
+        }
+        self.assertEqual((22.6, 120.3), food_lottery.locate_by_network()[:2])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ff7043">
+  <title>Food Lottery 食物抽籤器</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, sans-serif; color: #2b211d; background: #fff8f3; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+    main { width: min(100%, 520px); background: white; border-radius: 24px; padding: 24px; box-shadow: 0 16px 50px #6d2d121c; }
+    h1 { margin: 0; font-size: 2rem; } p { color: #715a50; line-height: 1.55; }
+    label { display: block; margin-top: 14px; font-weight: 650; }
+    input { width: 100%; margin-top: 6px; padding: 13px; border: 1px solid #ddc9bf; border-radius: 12px; font-size: 16px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button, a.button { appearance: none; border: 0; border-radius: 999px; padding: 13px 18px; font-size: 16px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+    button { background: #ff7043; color: white; } button.secondary { background: #f2e4dc; color: #4a3126; }
+    .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    #status { min-height: 24px; margin: 14px 0 0; }
+    #result { margin-top: 16px; padding: 16px; border-radius: 16px; background: #fff3eb; white-space: pre-line; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🍜 Food Lottery</h1>
+    <p>先使用手機目前位置搜尋；若定位被關閉，可開啟定位後重試或手動輸入地點。</p>
+    <label>位置<input id="location" autocomplete="street-address" placeholder="定位中，或輸入城市／區域／地址"></label>
+    <label>想吃什麼<input id="keyword" placeholder="例如：火鍋、咖啡（可留空）"></label>
+    <div class="row">
+      <label>最低評分<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
+      <label>半徑（公尺）<input id="radius" type="number" min="100" max="20000" value="3000"></label>
+    </div>
+    <div class="actions">
+      <button id="locate" class="secondary" type="button">重新定位</button>
+      <button id="search" type="button">幫我抽一間</button>
+    </div>
+    <p id="status" role="status">正在要求定位權限…</p>
+    <section id="result" hidden></section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
