@@ -162,12 +162,21 @@ async function chooseRestaurant() {
     $("result").hidden = false;
     status(`Google Places 找到 ${matches.length} 間符合條件的餐廳`);
   } catch (error) {
-    status(error?.message || "搜尋失敗，請檢查 API 設定後重試。");
+    status(friendlyError(error));
   } finally { button.disabled = false; }
 }
 
 function escapeHtml(value) {
   const node = document.createElement("span"); node.textContent = String(value); return node.innerHTML;
+}
+
+function friendlyError(error) {
+  const message = error?.message || String(error || "");
+  if (/referer|referrer|PERMISSION_DENIED/i.test(message)) {
+    return "Google 拒絕此網域。請將 API key 的 Website restriction 設為 https://xixa3333.github.io/*，等待數分鐘後重新整理。";
+  }
+  if (/API_KEY_INVALID|invalid.*key/i.test(message)) return "API key 無效，請確認輸入內容與已啟用的 Google Maps API。";
+  return message || "搜尋失敗，請檢查 API 設定後重試。";
 }
 
 function priceValue(level) {

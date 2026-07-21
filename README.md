@@ -29,9 +29,11 @@ Google Places 的價位分為免費、`$` 便宜、`$$` 中等、`$$$` 昂貴與
 1. 前往 [Google Maps Platform](https://console.cloud.google.com/google/maps-apis/overview) 建立 Cloud 專案並啟用帳單。
 2. 啟用 **Maps JavaScript API** 與 **Places API (New)**。
 3. 建立 API key。
-4. Application restrictions 選擇 **Websites**，允許：`https://xixa3333.github.io/Food_Lottery/*`。
+4. Application restrictions 選擇 **Websites**，允許：`https://xixa3333.github.io/*`。Google Places 實際收到的 referrer 是 GitHub Pages 網域來源；若限制到 `/Food_Lottery/*`，請求可能被拒絕。
 5. API restrictions 僅允許 Maps JavaScript API 與 Places API (New)。
 6. 在 Quotas 設每日上限，並在 Billing 設預算通知。
+
+若看到 `Requests from referer https://xixa3333.github.io/ are blocked`，請確認 Website restriction 使用上面的網域萬用字元，儲存後等待數分鐘，再重新整理網站。
 
 Google Maps Platform 按曆月與 SKU 計費，並對不同 SKU 提供不同的每月免費用量；免費額度與價格可能變更，使用前請查看[官方定價表](https://developers.google.com/maps/billing-and-pricing/pricing)。使用者仍須為自己 API key 產生的費用負責。
 
