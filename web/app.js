@@ -2,6 +2,8 @@ const STORAGE_KEY = "foodLotteryGoogleKey";
 const USAGE_KEY = "foodLotteryUsage";
 const LIMIT_KEY = "foodLotteryUsageLimit";
 const state = { coordinates: null, detectedLabel: "", mapsPromise: null };
+const PRICE_VALUES = { FREE: 0, INEXPENSIVE: 1, MODERATE: 2, EXPENSIVE: 3, VERY_EXPENSIVE: 4 };
+const PRICE_LABELS = ["免費", "$ 便宜", "$$ 中等", "$$$ 昂貴", "$$$$ 非常昂貴"];
 const $ = (id) => document.getElementById(id);
 const status = (message) => { $("status").textContent = message; };
 
@@ -102,7 +104,7 @@ async function geocodeAddress(address) {
 async function searchGooglePlaces(center, radius, keyword) {
   await loadGoogleMaps();
   const { Place, SearchNearbyRankPreference, SearchByTextRankPreference } = await google.maps.importLibrary("places");
-  const fields = ["displayName", "location", "rating", "googleMapsURI", "primaryTypeDisplayName"];
+  const fields = ["displayName", "location", "rating", "priceLevel", "googleMapsURI", "primaryTypeDisplayName"];
   addUsage("places");
   if (keyword) {
     const { places } = await Place.searchByText({
@@ -127,10 +129,14 @@ async function chooseRestaurant() {
   const keyword = $("keyword").value.trim();
   const minRating = Number($("rating").value);
   const radius = Number($("radius").value);
+  const minPrice = Number($("minPrice").value);
+  const maxPrice = Number($("maxPrice").value);
+  const includeUnknownPrice = $("includeUnknownPrice").checked;
   if (!currentKey()) { status("請先輸入並套用自己的 Google Maps API key。"); $("apiKey").focus(); return; }
   if (!Number.isFinite(minRating) || minRating < 0 || minRating > 5 || !Number.isInteger(radius) || radius < 100 || radius > 20000) {
     status("評分須為 0–5，半徑須為 100–20000 公尺。"); return;
   }
+  if (minPrice > maxPrice) { status("最低價位不能高於最高價位。"); $("minPrice").focus(); return; }
   if (!state.coordinates && !locationText) { status("請允許定位，或手動輸入位置。"); $("location").focus(); return; }
   button.disabled = true;
   status("正在使用 Google Places 搜尋附近餐廳…");
@@ -139,12 +145,20 @@ async function chooseRestaurant() {
       ? [state.coordinates, state.detectedLabel]
       : await geocodeAddress(locationText);
     const places = await searchGooglePlaces(center, radius, keyword);
-    const matches = places.filter((place) => minRating <= 0 || Number(place.rating) >= minRating);
+    const priceFilterActive = minPrice > 0 || maxPrice < 4;
+    const matches = places.filter((place) => {
+      if (minRating > 0 && !(Number(place.rating) >= minRating)) return false;
+      if (!priceFilterActive) return true;
+      const price = priceValue(place.priceLevel);
+      return price === null ? includeUnknownPrice : price >= minPrice && price <= maxPrice;
+    });
     if (!matches.length) throw new Error("找不到符合條件的餐廳，請降低評分、清空關鍵字或加大半徑。");
     const chosen = matches[Math.floor(Math.random() * matches.length)];
     const category = chosen.primaryTypeDisplayName || "餐廳";
     const rating = Number.isFinite(chosen.rating) ? `${chosen.rating} / 5` : "未提供";
-    $("result").innerHTML = `<strong>抽中：${escapeHtml(chosen.displayName)}</strong>搜尋中心：${escapeHtml(label)}<br>類型：${escapeHtml(category)}<br>評分：${rating}<br><br><a class="button" href="${chosen.googleMapsURI}" target="_blank" rel="noopener">在 Google Maps 開啟</a>`;
+    const price = priceValue(chosen.priceLevel);
+    const priceText = price === null ? "未提供" : PRICE_LABELS[price];
+    $("result").innerHTML = `<strong>抽中：${escapeHtml(chosen.displayName)}</strong>搜尋中心：${escapeHtml(label)}<br>類型：${escapeHtml(category)}<br>評分：${rating}<br>價位：${priceText}<br><br><a class="button" href="${chosen.googleMapsURI}" target="_blank" rel="noopener">在 Google Maps 開啟</a>`;
     $("result").hidden = false;
     status(`Google Places 找到 ${matches.length} 間符合條件的餐廳`);
   } catch (error) {
@@ -156,11 +170,28 @@ function escapeHtml(value) {
   const node = document.createElement("span"); node.textContent = String(value); return node.innerHTML;
 }
 
+function priceValue(level) {
+  if (level === undefined || level === null || level === "") return null;
+  if (Number.isInteger(level) && level >= 0 && level <= 4) return level;
+  const normalized = String(level).replace("PRICE_LEVEL_", "");
+  return Object.prototype.hasOwnProperty.call(PRICE_VALUES, normalized) ? PRICE_VALUES[normalized] : null;
+}
+
+function selectSuggestion(button) {
+  const selected = button.getAttribute("aria-pressed") === "true";
+  document.querySelectorAll(".chip").forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+  $("keyword").value = selected ? "" : button.dataset.keyword;
+  button.setAttribute("aria-pressed", String(!selected));
+  if (!selected) $("keyword").focus();
+}
+
 $("applyKey").addEventListener("click", saveAndApplyKey);
 $("locate").addEventListener("click", locateDevice);
 $("search").addEventListener("click", chooseRestaurant);
 $("usageLimit").addEventListener("change", () => { localStorage.setItem(LIMIT_KEY, $("usageLimit").value); renderUsage(); });
 $("location").addEventListener("input", () => { if ($("location").value.trim() !== state.detectedLabel) state.coordinates = null; });
+$("keyword").addEventListener("input", () => document.querySelectorAll(".chip").forEach((chip) => chip.setAttribute("aria-pressed", String(chip.dataset.keyword === $("keyword").value.trim()))));
+document.querySelectorAll(".chip").forEach((button) => button.addEventListener("click", () => selectSuggestion(button)));
 
 const savedKey = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || "";
 $("apiKey").value = savedKey;

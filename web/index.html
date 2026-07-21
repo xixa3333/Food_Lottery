@@ -49,6 +49,12 @@
     .check input { width: 18px; min-height: 18px; margin: 0; }
     .meter { height: 8px; margin: 9px 0; overflow: hidden; border-radius: 99px; background: #ead8ce; }
     .meter span { display: block; width: 0; height: 100%; background: #ef5b2a; transition: width .2s; }
+    .suggestions { margin-top: 10px; }
+    .suggestions-label { display: block; margin-bottom: 8px; color: #715a50; font-size: .84rem; font-weight: 700; }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip { min-height: 34px; padding: 7px 11px; border: 1px solid #e2c8ba; background: #fff9f5; color: #5b3d30; box-shadow: none; font-size: .86rem; font-weight: 700; }
+    .chip:hover, .chip[aria-pressed="true"] { border-color: #ef5b2a; background: #ef5b2a; color: #fff; }
+    select { width: 100%; min-height: 48px; margin-top: 7px; padding: 11px 38px 11px 14px; border: 1px solid #dac6bb; border-radius: 13px; background: #fff; color: #251b17; font-size: 16px; }
     [hidden] { display: none !important; }
     @media (max-width: 820px) { .shell { min-height: auto; grid-template-columns: 1fr; gap: 20px; padding: 24px 18px 36px; } .intro { padding: 10px 4px 0; } h1 { max-width: 620px; } .steps { grid-template-columns: repeat(3, 1fr); gap: 8px; } .steps li { align-items: flex-start; font-size: .88rem; } main { border-radius: 24px; } }
     @media (max-width: 560px) { .shell { padding-inline: 12px; } .steps { grid-template-columns: 1fr; } .steps li { align-items: center; } .row { grid-template-columns: 1fr; gap: 0; } .actions { display: grid; grid-template-columns: 1fr; } button, a.button { width: 100%; } main { padding: 20px 16px; border-radius: 22px; } }
@@ -83,10 +89,38 @@
     </details>
     <label>位置<input id="location" autocomplete="street-address" placeholder="定位中，或輸入城市／區域／地址"></label>
     <label>想吃什麼<input id="keyword" placeholder="例如：火鍋、咖啡（可留空）"></label>
+    <div class="suggestions" aria-label="熱門食物推薦">
+      <span class="suggestions-label">熱門搜尋，點一下直接帶入</span>
+      <div class="chips">
+        <button class="chip" type="button" data-keyword="牛肉麵" aria-pressed="false">牛肉麵</button>
+        <button class="chip" type="button" data-keyword="湯麵" aria-pressed="false">湯麵</button>
+        <button class="chip" type="button" data-keyword="滷肉飯" aria-pressed="false">滷肉飯</button>
+        <button class="chip" type="button" data-keyword="火鍋" aria-pressed="false">火鍋</button>
+        <button class="chip" type="button" data-keyword="燒肉" aria-pressed="false">燒肉</button>
+        <button class="chip" type="button" data-keyword="早午餐" aria-pressed="false">早午餐</button>
+        <button class="chip" type="button" data-keyword="咖啡" aria-pressed="false">咖啡</button>
+        <button class="chip" type="button" data-keyword="甜點" aria-pressed="false">甜點</button>
+        <button class="chip" type="button" data-keyword="素食" aria-pressed="false">素食</button>
+        <button class="chip" type="button" data-keyword="宵夜" aria-pressed="false">宵夜</button>
+      </div>
+    </div>
     <div class="row">
       <label>最低評分<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
       <label>半徑（公尺）<input id="radius" type="number" min="100" max="20000" value="3000"></label>
     </div>
+    <div class="row">
+      <label>最低價位
+        <select id="minPrice">
+          <option value="0">不限</option><option value="1">$ 便宜以上</option><option value="2">$$ 中等以上</option><option value="3">$$$ 昂貴以上</option><option value="4">$$$$ 非常昂貴</option>
+        </select>
+      </label>
+      <label>最高價位
+        <select id="maxPrice">
+          <option value="4">不限</option><option value="0">免費</option><option value="1">$ 便宜以下</option><option value="2">$$ 中等以下</option><option value="3">$$$ 昂貴以下</option>
+        </select>
+      </label>
+    </div>
+    <label class="check"><input id="includeUnknownPrice" type="checkbox">價格篩選時仍包含未提供價位的餐廳</label>
     <div class="actions">
       <button id="locate" class="secondary" type="button">重新定位</button>
       <button id="search" type="button">幫我抽一間</button>
