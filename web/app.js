@@ -1,7 +1,7 @@
 const STORAGE_KEY = "foodLotteryGoogleKey";
 const USAGE_KEY = "foodLotteryUsage";
 const LIMIT_KEY = "foodLotteryUsageLimit";
-const state = { coordinates: null, detectedLabel: "", mapsPromise: null };
+const state = { coordinates: null, locationAccuracy: 0, detectedLabel: "", mapsPromise: null };
 const PRICE_VALUES = { FREE: 0, INEXPENSIVE: 1, MODERATE: 2, EXPENSIVE: 3, VERY_EXPENSIVE: 4 };
 const PRICE_LABELS = ["免費", "$ 便宜", "$$ 中等", "$$$ 昂貴", "$$$$ 非常昂貴"];
 const $ = (id) => document.getElementById(id);
@@ -75,12 +75,14 @@ async function locateDevice() {
   navigator.geolocation.getCurrentPosition(
     ({ coords }) => {
       state.coordinates = { lat: coords.latitude, lng: coords.longitude };
+      state.locationAccuracy = Math.max(0, Number(coords.accuracy) || 0);
       state.detectedLabel = "目前位置";
       $("location").value = state.detectedLabel;
       status(`定位成功（精確度約 ${Math.round(coords.accuracy)} 公尺）`);
     },
     (error) => {
       state.coordinates = null;
+      state.locationAccuracy = 0;
       status(error.code === error.PERMISSION_DENIED
         ? "定位權限已關閉。請在瀏覽器網站設定允許定位後重試，或手動輸入位置。"
         : "暫時無法定位，請重試或手動輸入位置。"
@@ -108,7 +110,7 @@ async function searchGooglePlaces(center, radius, keyword) {
   addUsage("places");
   if (keyword) {
     const { places } = await Place.searchByText({
-      textQuery: `${keyword} 餐廳`, fields, locationBias: { center, radius },
+      textQuery: `${keyword} 餐廳`, fields, locationRestriction: { center, radius },
       includedType: "restaurant", maxResultCount: 20,
       rankPreference: SearchByTextRankPreference.RELEVANCE, language: "zh-TW", region: "TW"
     });
@@ -145,22 +147,26 @@ async function chooseRestaurant() {
       ? [state.coordinates, state.detectedLabel]
       : await geocodeAddress(locationText);
     const places = await searchGooglePlaces(center, radius, keyword);
+    const accuracyAllowance = state.coordinates && locationText === state.detectedLabel ? Math.ceil(state.locationAccuracy) : 0;
+    const maximumDistance = radius + accuracyAllowance;
     const priceFilterActive = minPrice > 0 || maxPrice < 4;
-    const matches = places.filter((place) => {
+    const matches = places.map((place) => ({ place, distance: distanceMeters(center, place.location) })).filter(({ place, distance }) => {
+      if (distance === null || distance > maximumDistance) return false;
       if (minRating > 0 && !(Number(place.rating) >= minRating)) return false;
       if (!priceFilterActive) return true;
       const price = priceValue(place.priceLevel);
       return price === null ? includeUnknownPrice : price >= minPrice && price <= maxPrice;
     });
-    if (!matches.length) throw new Error("找不到符合條件的餐廳，請降低評分、清空關鍵字或加大半徑。");
-    const chosen = matches[Math.floor(Math.random() * matches.length)];
+    if (!matches.length) throw new Error(`在 ${radius} 公尺範圍內找不到符合條件的餐廳，請降低評分、清空關鍵字或加大半徑。`);
+    const { place: chosen, distance } = matches[Math.floor(Math.random() * matches.length)];
     const category = chosen.primaryTypeDisplayName || "餐廳";
     const rating = Number.isFinite(chosen.rating) ? `${chosen.rating} / 5` : "未提供";
     const price = priceValue(chosen.priceLevel);
     const priceText = price === null ? "未提供" : PRICE_LABELS[price];
-    $("result").innerHTML = `<strong>抽中：${escapeHtml(chosen.displayName)}</strong>搜尋中心：${escapeHtml(label)}<br>類型：${escapeHtml(category)}<br>評分：${rating}<br>價位：${priceText}<br><br><a class="button" href="${chosen.googleMapsURI}" target="_blank" rel="noopener">在 Google Maps 開啟</a>`;
+    $("result").innerHTML = `<strong>抽中：${escapeHtml(chosen.displayName)}</strong>搜尋中心：${escapeHtml(label)}<br>直線距離：約 ${Math.round(distance)} 公尺<br>類型：${escapeHtml(category)}<br>評分：${rating}<br>價位：${priceText}<br><br><a class="button" href="${chosen.googleMapsURI}" target="_blank" rel="noopener">在 Google Maps 開啟</a>`;
     $("result").hidden = false;
-    status(`Google Places 找到 ${matches.length} 間符合條件的餐廳`);
+    const accuracyNote = accuracyAllowance ? `（已計入定位誤差約 ${accuracyAllowance} 公尺）` : "";
+    status(`嚴格範圍內找到 ${matches.length} 間符合條件的餐廳${accuracyNote}`);
   } catch (error) {
     status(friendlyError(error));
   } finally { button.disabled = false; }
@@ -184,6 +190,18 @@ function priceValue(level) {
   if (Number.isInteger(level) && level >= 0 && level <= 4) return level;
   const normalized = String(level).replace("PRICE_LEVEL_", "");
   return Object.prototype.hasOwnProperty.call(PRICE_VALUES, normalized) ? PRICE_VALUES[normalized] : null;
+}
+
+function distanceMeters(center, location) {
+  if (!center || !location) return null;
+  const lat = typeof location.lat === "function" ? location.lat() : Number(location.lat);
+  const lng = typeof location.lng === "function" ? location.lng() : Number(location.lng);
+  if (![center.lat, center.lng, lat, lng].every(Number.isFinite)) return null;
+  const radians = (degrees) => degrees * Math.PI / 180;
+  const deltaLat = radians(lat - center.lat);
+  const deltaLng = radians(lng - center.lng);
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(radians(center.lat)) * Math.cos(radians(lat)) * Math.sin(deltaLng / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function selectSuggestion(button) {
