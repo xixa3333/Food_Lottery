@@ -1,120 +1,170 @@
-const NOMINATIM = "https://nominatim.openstreetmap.org/search";
-const OVERPASS_ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.nchc.org.tw/api/interpreter"
-];
-const state = { coordinates: null, detectedLabel: "" };
-
+const STORAGE_KEY = "foodLotteryGoogleKey";
+const USAGE_KEY = "foodLotteryUsage";
+const LIMIT_KEY = "foodLotteryUsageLimit";
+const state = { coordinates: null, detectedLabel: "", mapsPromise: null };
 const $ = (id) => document.getElementById(id);
 const status = (message) => { $("status").textContent = message; };
 
+function monthId(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function readUsage() {
+  try {
+    const value = JSON.parse(localStorage.getItem(USAGE_KEY));
+    if (value?.month === monthId()) return { month: value.month, places: Number(value.places) || 0, geocoding: Number(value.geocoding) || 0 };
+  } catch (_) { /* Start a clean local counter. */ }
+  return { month: monthId(), places: 0, geocoding: 0 };
+}
+
+function addUsage(service) {
+  const usage = readUsage();
+  usage[service] += 1;
+  localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+  renderUsage();
+}
+
+function renderUsage() {
+  const usage = readUsage();
+  const total = usage.places + usage.geocoding;
+  const limit = Math.max(1, Number($("usageLimit").value) || 1000);
+  $("usageText").textContent = `本月這台裝置：Places 搜尋 ${usage.places} 次、地址解析 ${usage.geocoding} 次`;
+  $("usageBar").style.width = `${Math.min(100, total / limit * 100)}%`;
+  const now = new Date();
+  const reset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  $("resetText").textContent = `本機統計將於 ${reset.toLocaleString("zh-TW", { dateStyle: "long", timeStyle: "short" })} 進入新月份。這不是 Google 帳單總量。`;
+  if (total >= limit) status(`已達本機警告門檻 ${limit} 次，請先查看 Google 官方用量。`);
+}
+
+function currentKey() {
+  return $("apiKey").value.trim() || sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY) || "";
+}
+
+function saveAndApplyKey() {
+  const key = $("apiKey").value.trim();
+  if (!key) { status("請先輸入 Google Maps API key。"); return; }
+  sessionStorage.setItem(STORAGE_KEY, key);
+  if ($("rememberKey").checked) localStorage.setItem(STORAGE_KEY, key);
+  else localStorage.removeItem(STORAGE_KEY);
+  state.mapsPromise = null;
+  loadGoogleMaps().then(() => status("API key 已套用，可以開始搜尋。"), (error) => status(error.message));
+}
+
+function loadGoogleMaps() {
+  if (window.google?.maps?.importLibrary) return Promise.resolve(window.google.maps);
+  if (state.mapsPromise) return state.mapsPromise;
+  const key = currentKey();
+  if (!key) return Promise.reject(new Error("請先輸入並套用自己的 Google Maps API key。"));
+  state.mapsPromise = new Promise((resolve, reject) => {
+    const callback = `foodLotteryMapsReady_${Date.now()}`;
+    window[callback] = () => { delete window[callback]; resolve(window.google.maps); };
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly&loading=async&callback=${callback}`;
+    script.async = true;
+    script.onerror = () => { delete window[callback]; state.mapsPromise = null; reject(new Error("Google Maps 載入失敗，請檢查 API key、API 限制與網域設定。")); };
+    document.head.appendChild(script);
+  });
+  return state.mapsPromise;
+}
+
 async function locateDevice() {
-  if (!navigator.geolocation) {
-    status("此瀏覽器不支援定位，請手動輸入位置。");
-    return;
-  }
-  status("正在取得手機目前位置…");
+  if (!navigator.geolocation) { status("此瀏覽器不支援定位，請手動輸入位置。"); return; }
+  status("正在取得目前位置…");
   navigator.geolocation.getCurrentPosition(
     ({ coords }) => {
-      state.coordinates = [coords.latitude, coords.longitude];
+      state.coordinates = { lat: coords.latitude, lng: coords.longitude };
       state.detectedLabel = "目前位置";
       $("location").value = state.detectedLabel;
       status(`定位成功（精確度約 ${Math.round(coords.accuracy)} 公尺）`);
     },
     (error) => {
       state.coordinates = null;
-      const hint = error.code === error.PERMISSION_DENIED
-        ? "定位權限已關閉。請在瀏覽器網站設定中允許定位後按「重新定位」，或手動輸入位置。"
-        : "暫時無法定位，請移到訊號良好的位置重試，或手動輸入位置。";
-      status(hint);
+      status(error.code === error.PERMISSION_DENIED
+        ? "定位權限已關閉。請在瀏覽器網站設定允許定位後重試，或手動輸入位置。"
+        : "暫時無法定位，請重試或手動輸入位置。"
+      );
       $("location").focus();
     },
     { enableHighAccuracy: true, timeout: 12000, maximumAge: 120000 }
   );
 }
 
-async function geocode(query) {
-  const url = `${NOMINATIM}?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
-  const response = await fetch(url, { headers: { "Accept-Language": "zh-TW" } });
-  if (!response.ok) throw new Error("地點查詢服務暫時無法使用");
-  const items = await response.json();
-  if (!items.length) throw new Error(`找不到地點：${query}`);
-  return [Number(items[0].lat), Number(items[0].lon), items[0].display_name];
+async function geocodeAddress(address) {
+  await loadGoogleMaps();
+  addUsage("geocoding");
+  const geocoder = new google.maps.Geocoder();
+  const { results } = await geocoder.geocode({ address, region: "TW", language: "zh-TW" });
+  if (!results.length) throw new Error(`找不到位置：${address}`);
+  const point = results[0].geometry.location;
+  return [{ lat: point.lat(), lng: point.lng() }, results[0].formatted_address];
 }
 
-async function fetchVenues(latitude, longitude, radius) {
-  const query = `[out:json][timeout:25];(nwr["amenity"~"^(restaurant|fast_food|cafe|food_court)$"](around:${radius},${latitude},${longitude}););out center tags;`;
-  let payload;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ data: query })
-      });
-      if (response.ok) { payload = await response.json(); break; }
-    } catch (_) { /* Try the next public mirror. */ }
+async function searchGooglePlaces(center, radius, keyword) {
+  await loadGoogleMaps();
+  const { Place, SearchNearbyRankPreference, SearchByTextRankPreference } = await google.maps.importLibrary("places");
+  const fields = ["displayName", "location", "rating", "googleMapsURI", "primaryTypeDisplayName"];
+  addUsage("places");
+  if (keyword) {
+    const { places } = await Place.searchByText({
+      textQuery: `${keyword} 餐廳`, fields, locationBias: { center, radius },
+      includedType: "restaurant", maxResultCount: 20,
+      rankPreference: SearchByTextRankPreference.RELEVANCE, language: "zh-TW", region: "TW"
+    });
+    return places;
   }
-  if (!payload) throw new Error("餐廳資料服務忙碌中，請稍後重試");
-  return payload.elements.flatMap((element) => {
-    const tags = element.tags || {};
-    const center = element.center || element;
-    const name = tags.name || tags["name:zh"];
-    if (!name || center.lat == null || center.lon == null) return [];
-    const rating = Number(tags.rating);
-    return [{ name, category: tags.cuisine || tags.amenity || "food", rating: Number.isFinite(rating) ? rating : null, latitude: center.lat, longitude: center.lon }];
+  const { places } = await Place.searchNearby({
+    fields, locationRestriction: { center, radius },
+    includedPrimaryTypes: ["restaurant", "cafe", "bakery", "meal_takeaway"],
+    maxResultCount: 20, rankPreference: SearchNearbyRankPreference.POPULARITY,
+    language: "zh-TW", region: "TW"
   });
+  return places;
 }
 
 async function chooseRestaurant() {
   const button = $("search");
   const locationText = $("location").value.trim();
-  const keyword = $("keyword").value.trim().toLocaleLowerCase();
+  const keyword = $("keyword").value.trim();
   const minRating = Number($("rating").value);
   const radius = Number($("radius").value);
+  if (!currentKey()) { status("請先輸入並套用自己的 Google Maps API key。"); $("apiKey").focus(); return; }
   if (!Number.isFinite(minRating) || minRating < 0 || minRating > 5 || !Number.isInteger(radius) || radius < 100 || radius > 20000) {
-    status("評分須為 0–5，半徑須為 100–20000 公尺。");
-    return;
+    status("評分須為 0–5，半徑須為 100–20000 公尺。"); return;
   }
-  if (!state.coordinates && !locationText) {
-    status("請開啟定位並重新定位，或手動輸入位置。");
-    $("location").focus();
-    return;
-  }
+  if (!state.coordinates && !locationText) { status("請允許定位，或手動輸入位置。"); $("location").focus(); return; }
   button.disabled = true;
-  status("正在搜尋附近餐廳…");
+  status("正在使用 Google Places 搜尋附近餐廳…");
   try {
-    const [lat, lon, label] = state.coordinates && locationText === state.detectedLabel
-      ? [...state.coordinates, state.detectedLabel]
-      : await geocode(locationText);
-    const venues = await fetchVenues(lat, lon, radius);
-    const matches = venues.filter((venue) => {
-      const text = `${venue.name} ${venue.category}`.toLocaleLowerCase();
-      return (!keyword || text.includes(keyword)) && (minRating <= 0 || venue.rating !== null && venue.rating >= minRating);
-    });
-    if (!matches.length) throw new Error("找不到符合條件的餐廳，請清空關鍵字、降低評分或加大半徑。");
+    const [center, label] = state.coordinates && locationText === state.detectedLabel
+      ? [state.coordinates, state.detectedLabel]
+      : await geocodeAddress(locationText);
+    const places = await searchGooglePlaces(center, radius, keyword);
+    const matches = places.filter((place) => minRating <= 0 || Number(place.rating) >= minRating);
+    if (!matches.length) throw new Error("找不到符合條件的餐廳，請降低評分、清空關鍵字或加大半徑。");
     const chosen = matches[Math.floor(Math.random() * matches.length)];
-    const map = `https://www.openstreetmap.org/?mlat=${chosen.latitude}&mlon=${chosen.longitude}#map=18/${chosen.latitude}/${chosen.longitude}`;
-    $("result").innerHTML = `<strong>抽中：${escapeHtml(chosen.name)}</strong><br>搜尋中心：${escapeHtml(label)}<br>類型：${escapeHtml(chosen.category)}<br>評分：${chosen.rating ?? "未提供"}<br><br><a class="button" href="${map}" target="_blank" rel="noopener">在地圖開啟</a>`;
+    const category = chosen.primaryTypeDisplayName || "餐廳";
+    const rating = Number.isFinite(chosen.rating) ? `${chosen.rating} / 5` : "未提供";
+    $("result").innerHTML = `<strong>抽中：${escapeHtml(chosen.displayName)}</strong>搜尋中心：${escapeHtml(label)}<br>類型：${escapeHtml(category)}<br>評分：${rating}<br><br><a class="button" href="${chosen.googleMapsURI}" target="_blank" rel="noopener">在 Google Maps 開啟</a>`;
     $("result").hidden = false;
-    status(`找到 ${matches.length} 間符合條件的餐廳`);
+    status(`Google Places 找到 ${matches.length} 間符合條件的餐廳`);
   } catch (error) {
-    status(error.message || "搜尋失敗，請稍後重試。");
-  } finally {
-    button.disabled = false;
-  }
+    status(error?.message || "搜尋失敗，請檢查 API 設定後重試。");
+  } finally { button.disabled = false; }
 }
 
 function escapeHtml(value) {
-  const node = document.createElement("span");
-  node.textContent = String(value);
-  return node.innerHTML;
+  const node = document.createElement("span"); node.textContent = String(value); return node.innerHTML;
 }
 
+$("applyKey").addEventListener("click", saveAndApplyKey);
 $("locate").addEventListener("click", locateDevice);
 $("search").addEventListener("click", chooseRestaurant);
-$("location").addEventListener("input", () => {
-  if ($("location").value.trim() !== state.detectedLabel) state.coordinates = null;
-});
+$("usageLimit").addEventListener("change", () => { localStorage.setItem(LIMIT_KEY, $("usageLimit").value); renderUsage(); });
+$("location").addEventListener("input", () => { if ($("location").value.trim() !== state.detectedLabel) state.coordinates = null; });
+
+const savedKey = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || "";
+$("apiKey").value = savedKey;
+$("rememberKey").checked = Boolean(localStorage.getItem(STORAGE_KEY));
+$("usageLimit").value = localStorage.getItem(LIMIT_KEY) || "1000";
+renderUsage();
 locateDevice();
