@@ -1,6 +1,6 @@
 # Food Lottery 食物抽籤器
 
-直接搜尋附近餐廳並隨機抽選。專案是純 HTML、CSS 與 JavaScript，不需安裝 App 或 Python，手機與電腦皆可使用。
+使用 Google Places 搜尋附近餐廳並隨機抽選。專案是純 HTML、CSS 與 JavaScript，不需安裝 App 或 Python，手機與電腦皆可使用。
 
 ## 手機網頁版
 
@@ -12,15 +12,26 @@
 2. 若定位被拒絕，頁面會提示至瀏覽器網站設定開啟定位並重新嘗試。
 3. 不方便開啟定位時，也可直接輸入城市、區域或地址。
 
+## 設定自己的 Google Maps API key
+
+每位使用者在頁面輸入自己的 key，key 只保存在該瀏覽器的 session；勾選「記住」後才會保存在該裝置的 localStorage，不會提交到此 GitHub 儲存庫。
+
+1. 前往 [Google Maps Platform](https://console.cloud.google.com/google/maps-apis/overview) 建立 Cloud 專案並啟用帳單。
+2. 啟用 **Maps JavaScript API** 與 **Places API (New)**。
+3. 建立 API key。
+4. Application restrictions 選擇 **Websites**，允許：`https://xixa3333.github.io/Food_Lottery/*`。
+5. API restrictions 僅允許 Maps JavaScript API 與 Places API (New)。
+6. 在 Quotas 設每日上限，並在 Billing 設預算通知。
+
+Google Maps Platform 按曆月與 SKU 計費，並對不同 SKU 提供不同的每月免費用量；免費額度與價格可能變更，使用前請查看[官方定價表](https://developers.google.com/maps/billing-and-pricing/pricing)。使用者仍須為自己 API key 產生的費用負責。
+
+網站會記錄這台裝置本月發出的 Places 搜尋與地址解析次數，並顯示下個月開始時間。這只是本機估算，清除瀏覽器資料、換裝置或在其他網站使用同一把 key 都不會反映；準確總量須查看 [Google Maps Platform Metrics](https://console.cloud.google.com/google/maps-apis/metrics)。
+
 瀏覽器基於安全規定，GPS 定位通常只允許 HTTPS 或 localhost。直接以手機開啟下載後的 HTML 檔案可能無法定位，建議部署至 GitHub Pages 或其他 HTTPS 網站。
 
 ## 資料來源
 
-- 地點文字解析：[Nominatim](https://nominatim.org/)
-- 餐廳資料：[Overpass API](https://overpass-api.de/)
-- Windows 網路位置：[IPWho](https://ipwho.is/)
-
-以上皆為免 API key 的公共服務，請勿高頻或大量呼叫。餐廳內容來自 OpenStreetMap 社群，完整度與評分資料會因地區而異；最低評分設為 `0` 才會包含沒有評分的店家。
+餐廳、評分、地點文字解析與 Google Maps 連結皆由 Google Maps Platform 提供。最低評分設為 `0` 才會包含沒有評分的店家。
 
 ## 開發與測試
 
@@ -37,6 +48,7 @@ web/
 
 ## 隱私與安全
 
-- 沒有內建 API key 或密鑰。
+- 儲存庫沒有內建 API key 或密鑰。
 - LINE Notify 已停止服務，相關程式與 token 已移除。
-- 定位資訊只會傳給地點解析與餐廳查詢服務，用於本次搜尋。
+- 使用者輸入的 API key 只保存在該瀏覽器的 session 或 localStorage。
+- 定位資訊會傳給 Google Maps Platform，用於本次搜尋。

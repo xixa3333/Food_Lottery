@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f05a2a">
-  <meta name="description" content="使用目前位置，快速隨機抽出附近餐廳。手機與電腦都能使用。">
+  <meta name="description" content="使用 Google Places 與目前位置，快速隨機抽出附近餐廳。手機與電腦都能使用。">
   <meta property="og:title" content="Food Lottery 食物抽籤器">
   <meta property="og:description" content="不知道吃什麼？用目前位置抽一間附近餐廳。">
   <meta property="og:image" content="https://xixa3333.github.io/Food_Lottery/og.png">
@@ -37,8 +37,18 @@
     button { background: #ef5b2a; color: white; box-shadow: 0 10px 24px #ee5a2a35; } button.secondary { background: #f2e4dc; color: #4a3126; box-shadow: none; }
     .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
     #status { min-height: 24px; margin: 14px 0 0; }
-    #result { margin-top: 16px; padding: 18px; border: 1px solid #f3d8c8; border-radius: 18px; background: #fff3eb; line-height: 1.65; }
+    #result, .usage { margin-top: 16px; padding: 18px; border: 1px solid #f3d8c8; border-radius: 18px; background: #fff3eb; line-height: 1.65; }
     #result strong { display: block; margin-bottom: 4px; font-size: 1.3rem; }
+    details { margin-top: 16px; border-top: 1px solid #ead9cf; padding-top: 14px; }
+    summary { cursor: pointer; font-weight: 800; color: #9c3819; }
+    details ol { padding-left: 22px; color: #614b40; line-height: 1.65; }
+    details a, .usage a { color: #a13b1d; font-weight: 700; }
+    .api-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+    .api-row button { min-width: 94px; box-shadow: none; }
+    .check { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #715a50; font-size: .88rem; font-weight: 500; }
+    .check input { width: 18px; min-height: 18px; margin: 0; }
+    .meter { height: 8px; margin: 9px 0; overflow: hidden; border-radius: 99px; background: #ead8ce; }
+    .meter span { display: block; width: 0; height: 100%; background: #ef5b2a; transition: width .2s; }
     [hidden] { display: none !important; }
     @media (max-width: 820px) { .shell { min-height: auto; grid-template-columns: 1fr; gap: 20px; padding: 24px 18px 36px; } .intro { padding: 10px 4px 0; } h1 { max-width: 620px; } .steps { grid-template-columns: repeat(3, 1fr); gap: 8px; } .steps li { align-items: flex-start; font-size: .88rem; } main { border-radius: 24px; } }
     @media (max-width: 560px) { .shell { padding-inline: 12px; } .steps { grid-template-columns: 1fr; } .steps li { align-items: center; } .row { grid-template-columns: 1fr; gap: 0; } .actions { display: grid; grid-template-columns: 1fr; } button, a.button { width: 100%; } main { padding: 20px 16px; border-radius: 22px; } }
@@ -56,6 +66,21 @@
   <main>
     <h2 class="card-title">附近餐廳抽籤</h2>
     <p>手機與電腦都能用；定位不可用時，也可以手動輸入城市、區域或地址。</p>
+    <div class="api-row">
+      <label>你的 Google Maps API key<input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
+      <button id="applyKey" class="secondary" type="button">套用</button>
+    </div>
+    <label class="check"><input id="rememberKey" type="checkbox">只在這台裝置記住 API key</label>
+    <details>
+      <summary>如何建立並安全設定免費用量？</summary>
+      <ol>
+        <li>在 <a href="https://console.cloud.google.com/google/maps-apis/overview" target="_blank" rel="noopener">Google Cloud Console</a> 建立專案並啟用帳單。</li>
+        <li>啟用 <strong>Maps JavaScript API</strong> 與 <strong>Places API (New)</strong>。</li>
+        <li>建立 API key，Application restriction 選 <strong>Websites</strong>，加入 <code>https://xixa3333.github.io/Food_Lottery/*</code>。</li>
+        <li>API restrictions 只允許上述兩個 API，並在 Quotas 設定每日上限與帳單預算通知。</li>
+        <li>Google 依 SKU 提供每月免費用量，額度可能調整；請查看<a href="https://developers.google.com/maps/billing-and-pricing/pricing" target="_blank" rel="noopener">官方定價頁</a>。</li>
+      </ol>
+    </details>
     <label>位置<input id="location" autocomplete="street-address" placeholder="定位中，或輸入城市／區域／地址"></label>
     <label>想吃什麼<input id="keyword" placeholder="例如：火鍋、咖啡（可留空）"></label>
     <div class="row">
@@ -67,6 +92,14 @@
       <button id="search" type="button">幫我抽一間</button>
     </div>
     <p id="status" role="status">正在要求定位權限…</p>
+    <aside class="usage">
+      <strong>本機用量估算</strong>
+      <div id="usageText">本月由這台裝置搜尋 0 次</div>
+      <div class="meter" aria-hidden="true"><span id="usageBar"></span></div>
+      <label>本機警告門檻<input id="usageLimit" type="number" min="1" step="1" value="1000"></label>
+      <small id="resetText"></small><br>
+      <a href="https://console.cloud.google.com/google/maps-apis/metrics" target="_blank" rel="noopener">查看 Google 帳戶的官方總用量</a>
+    </aside>
     <section id="result" hidden></section>
   </main>
   </div>
