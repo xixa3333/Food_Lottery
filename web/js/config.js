@@ -1,4 +1,4 @@
-export const APP_VERSION = "2026.07.22.4";
+export const APP_VERSION = "2026.07.22.5";
 export const STORAGE_KEYS = Object.freeze({
   apiKey: "foodLotteryGoogleKey",
   usage: "foodLotteryUsage",

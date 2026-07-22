@@ -1,4 +1,4 @@
-import { GOOGLE_REFERRER } from "../config.js?v=20260722-4";
+import { GOOGLE_REFERRER } from "../config.js?v=20260722-5";
 
 export function friendlyError(error) {
   const message = error?.message || String(error || "");
