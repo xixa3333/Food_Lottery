@@ -1,5 +1,5 @@
-import { PRICE_LABELS } from "../config.js?v=20260722-3";
-import { priceValue } from "../domain/search.js?v=20260722-3";
+import { PRICE_LABELS } from "../config.js?v=20260722-4";
+import { priceValue } from "../domain/search.js?v=20260722-4";
 
 export class AppView {
   constructor(document) {
@@ -64,9 +64,11 @@ export class AppView {
     link.textContent = "在 Google Maps 開啟";
     section.append(link);
     section.hidden = false;
+    this.byId("reroll").hidden = false;
   }
 
   setBusy(busy) {
     this.byId("search").disabled = busy;
+    this.byId("reroll").disabled = busy;
   }
 }

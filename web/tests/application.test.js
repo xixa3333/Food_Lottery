@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { searchRestaurants } from "../js/application/search-restaurants.js";
+import { pickCandidate, searchRestaurants } from "../js/application/search-restaurants.js";
 
 const limits = { minRadius: 100, maxRadius: 50000, minRating: 0, maxRating: 5 };
 const criteria = { radius: 100, minRating: 0, minPrice: 0, maxPrice: 4 };
@@ -26,4 +26,9 @@ test("missing location and empty result are explicit errors", async () => {
   await assert.rejects(searchRestaurants({ locationText: "", keyword: "", criteria }, { places: {}, limits, random: Math.random }), /位置/);
   const places = { resolveLocation: async () => ({ center: { lat: 25, lng: 121 } }), searchRestaurants: async () => [] };
   await assert.rejects(searchRestaurants({ locationText: "台北", keyword: "", criteria }, { places, limits, random: Math.random }), /找不到符合/);
+});
+
+test("reroll selection can exclude the current place without a service call", () => {
+  const candidates = [{ place: { id: "a" } }, { place: { id: "b" } }];
+  assert.equal(pickCandidate(candidates, () => 0, "a").place.id, "b");
 });

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { GooglePlacesService } from "../js/services/places-service.js";
+import { buildSearchAreas, GooglePlacesService } from "../js/services/places-service.js";
 
 function serviceWith(placeApi) {
   let count = 0;
@@ -29,4 +29,16 @@ test("keyword and nearby searches choose their Places API methods", async () => 
   assert.ok(requests[0][1].fields.includes("currentOpeningHours"));
   assert.ok(requests[0][1].fields.includes("utcOffsetMinutes"));
   assert.equal(count(), 2);
+});
+
+test("dense result automatically partitions and deduplicates by place id", async () => {
+  let calls = 0;
+  const full = Array.from({ length: 20 }, (_, i) => ({ id: String(i), location: { lat: 25, lng: 121 } }));
+  const api = { Place: { searchNearby: async () => (calls++, { places: full }) }, SearchNearbyRankPreference: { POPULARITY: "p" } };
+  const { service } = serviceWith(api);
+  const result = await service.searchRestaurants({ center: { lat: 25, lng: 121 }, radius: 500, keyword: "" });
+  assert.equal(calls, 5);
+  assert.equal(result.length, 20);
+  assert.equal(buildSearchAreas({ lat: 25, lng: 121 }, 1000).length, 9);
+  assert.equal(buildSearchAreas({ lat: 25, lng: 121 }, 3000).length, 16);
 });

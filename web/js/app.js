@@ -1,12 +1,12 @@
-import { APP_VERSION, SEARCH_LIMITS, STORAGE_KEYS } from "./config.js?v=20260722-3";
-import { searchRestaurants } from "./application/search-restaurants.js?v=20260722-3";
-import { ApiKeyStore } from "./services/key-store.js?v=20260722-3";
-import { UsageStore } from "./services/usage-store.js?v=20260722-3";
-import { BrowserLocationService } from "./services/location-service.js?v=20260722-3";
-import { GoogleMapsLoader } from "./services/google-maps-loader.js?v=20260722-3";
-import { GooglePlacesService } from "./services/places-service.js?v=20260722-3";
-import { friendlyError } from "./ui/errors.js?v=20260722-3";
-import { AppView } from "./ui/view.js?v=20260722-3";
+import { APP_VERSION, SEARCH_LIMITS, STORAGE_KEYS } from "./config.js?v=20260722-4";
+import { pickCandidate, searchRestaurants } from "./application/search-restaurants.js?v=20260722-4";
+import { ApiKeyStore } from "./services/key-store.js?v=20260722-4";
+import { UsageStore } from "./services/usage-store.js?v=20260722-4";
+import { BrowserLocationService } from "./services/location-service.js?v=20260722-4";
+import { GoogleMapsLoader } from "./services/google-maps-loader.js?v=20260722-4";
+import { GooglePlacesService } from "./services/places-service.js?v=20260722-4";
+import { friendlyError } from "./ui/errors.js?v=20260722-4";
+import { AppView } from "./ui/view.js?v=20260722-4";
 
 const view = new AppView(document);
 const keyStore = new ApiKeyStore({ sessionStorage, localStorage, key: STORAGE_KEYS.apiKey });
@@ -14,7 +14,7 @@ const usageStore = new UsageStore({ storage: localStorage, key: STORAGE_KEYS.usa
 const loader = new GoogleMapsLoader({ window, document });
 const places = new GooglePlacesService({ loader, apiKeyProvider: () => keyStore.read(), usageStore });
 const locationService = new BrowserLocationService(navigator.geolocation);
-const state = { coordinates: null, accuracy: 0, detectedLabel: "" };
+const state = { coordinates: null, accuracy: 0, detectedLabel: "", candidates: [], resultContext: null, selectedId: null };
 
 function renderUsage() {
   const limit = Math.max(1, Number(view.byId("usageLimit").value) || 1000);
@@ -54,10 +54,17 @@ async function search() {
     view.byId("apiKey").focus();
     return;
   }
+  state.candidates = [];
+  state.resultContext = null;
+  state.selectedId = null;
+  view.byId("reroll").hidden = true;
   view.setBusy(true);
   view.setStatus("正在使用 Google Places 搜尋附近餐廳…");
   try {
     const result = await searchRestaurants(view.readSearchRequest(state), { places, limits: SEARCH_LIMITS, random: Math.random });
+    state.candidates = result.candidates;
+    state.resultContext = { count: result.count, centerLabel: result.centerLabel, accuracyAllowance: result.accuracyAllowance };
+    state.selectedId = result.place.id || null;
     view.renderResult(result);
     const note = result.accuracyAllowance ? `（已計入定位誤差約 ${result.accuracyAllowance} 公尺）` : "";
     view.setStatus(`嚴格範圍內找到 ${result.count} 間符合條件的餐廳${note}`);
@@ -67,6 +74,14 @@ async function search() {
     view.setBusy(false);
     renderUsage();
   }
+}
+
+function reroll() {
+  if (!state.candidates.length) return;
+  const selection = pickCandidate(state.candidates, Math.random, state.selectedId);
+  state.selectedId = selection.place.id || null;
+  view.renderResult({ ...selection, ...state.resultContext });
+  view.setStatus(`已從既有 ${state.candidates.length} 間候選餐廳重抽，沒有新增 API 請求。`);
 }
 
 function selectSuggestion(button) {
@@ -80,6 +95,7 @@ function selectSuggestion(button) {
 view.byId("applyKey").addEventListener("click", applyKey);
 view.byId("locate").addEventListener("click", locate);
 view.byId("search").addEventListener("click", search);
+view.byId("reroll").addEventListener("click", reroll);
 view.byId("usageLimit").addEventListener("change", () => {
   localStorage.setItem(STORAGE_KEYS.usageLimit, view.byId("usageLimit").value);
   renderUsage();

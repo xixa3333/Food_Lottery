@@ -1,4 +1,4 @@
-import { filterPlaces, validateCriteria } from "../domain/search.js?v=20260722-3";
+import { filterPlaces, validateCriteria } from "../domain/search.js?v=20260722-4";
 
 export async function searchRestaurants(request, dependencies) {
   const validationError = validateCriteria(request.criteria, dependencies.limits);
@@ -20,6 +20,14 @@ export async function searchRestaurants(request, dependencies) {
   if (!matches.length) {
     throw new Error(`在 ${request.criteria.radius} 公尺範圍內找不到符合條件的餐廳，請降低評分、清空關鍵字或加大半徑。`);
   }
-  const index = Math.min(matches.length - 1, Math.floor(dependencies.random() * matches.length));
-  return { ...matches[index], count: matches.length, centerLabel: resolved.label, accuracyAllowance: accuracy };
+  const selection = pickCandidate(matches, dependencies.random);
+  return { ...selection, candidates: matches, count: matches.length, centerLabel: resolved.label, accuracyAllowance: accuracy };
+}
+
+export function pickCandidate(candidates, random = Math.random, excludedId = null) {
+  const pool = candidates.length > 1 && excludedId
+    ? candidates.filter(({ place }) => place.id !== excludedId)
+    : candidates;
+  const index = Math.min(pool.length - 1, Math.floor(random() * pool.length));
+  return pool[index];
 }
