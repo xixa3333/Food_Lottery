@@ -40,7 +40,7 @@ Google Places 的價位分為免費、`$` 便宜、`$$` 中等、`$$$` 昂貴與
 
 Google Maps Platform 按曆月與 SKU 計費，並對不同 SKU 提供不同的每月免費用量；免費額度與價格可能變更，使用前請查看[官方定價表](https://developers.google.com/maps/billing-and-pricing/pricing)。使用者仍須為自己 API key 產生的費用負責。
 
-網站會記錄這台裝置本月發出的 Places 搜尋與地址解析次數，並顯示下個月開始時間。這只是本機估算，清除瀏覽器資料、換裝置或在其他網站使用同一把 key 都不會反映；準確總量須查看 [Google Maps Platform Metrics](https://console.cloud.google.com/google/maps-apis/metrics)。
+網站會記錄這台裝置本月透過本站發出的 Places 請求次數，並顯示下個月開始時間。手動位置解析也使用 Places API (New)，不需要另外啟用 Geocoding API。這只是本機估算，清除瀏覽器資料、換裝置或在其他網站使用同一把 key 都不會反映；準確總量須查看 [Google Maps Platform Metrics](https://console.cloud.google.com/google/maps-apis/metrics)。
 
 瀏覽器基於安全規定，GPS 定位通常只允許 HTTPS 或 localhost。直接以手機開啟下載後的 HTML 檔案可能無法定位，建議部署至 GitHub Pages 或其他 HTTPS 網站。
 
