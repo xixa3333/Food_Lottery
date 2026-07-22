@@ -4,139 +4,77 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f05a2a">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com; connect-src 'self' https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; img-src 'self' data: https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
   <meta name="description" content="使用 Google Places 與目前位置，快速隨機抽出附近餐廳。手機與電腦都能使用。">
   <meta property="og:title" content="Food Lottery 食物抽籤器">
   <meta property="og:description" content="不知道吃什麼？用目前位置抽一間附近餐廳。">
   <meta property="og:image" content="https://xixa3333.github.io/Food_Lottery/og.png">
   <meta property="og:type" content="website">
   <title>Food Lottery 食物抽籤器</title>
-  <style>
-    :root { font-family: Inter, "Noto Sans TC", system-ui, -apple-system, sans-serif; color: #251b17; background: #f8eee5; }
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 15% 15%, #ffd7bf 0, transparent 28%), linear-gradient(145deg, #fff9f4, #f2dfd1); }
-    .shell { width: min(1180px, 100%); min-height: 100vh; margin: auto; padding: clamp(18px, 4vw, 56px); display: grid; grid-template-columns: minmax(280px, .82fr) minmax(440px, 1.18fr); gap: clamp(24px, 5vw, 72px); align-items: center; }
-    .intro { padding: 10px; }
-    .eyebrow { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: #fff4eb; color: #a83c1c; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    h1 { margin: 18px 0 12px; font-size: clamp(2.7rem, 6vw, 5.2rem); line-height: .96; letter-spacing: -.06em; }
-    h1 span { color: #e84e1b; }
-    .lead { max-width: 540px; font-size: clamp(1rem, 2vw, 1.18rem); }
-    .steps { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 12px; }
-    .steps li { display: flex; align-items: center; gap: 12px; color: #4f3b32; }
-    .steps b { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border-radius: 50%; background: #251b17; color: white; font-size: .78rem; }
-    main { width: 100%; background: #fffdfbde; backdrop-filter: blur(16px); border: 1px solid #ffffff; border-radius: 30px; padding: clamp(22px, 4vw, 38px); box-shadow: 0 24px 80px #6d2d1224; }
-    .card-title { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.03em; }
-    p { color: #715a50; line-height: 1.6; }
-    label { display: block; margin-top: 14px; font-weight: 650; }
-    input { width: 100%; min-height: 48px; margin-top: 7px; padding: 12px 14px; border: 1px solid #dac6bb; border-radius: 13px; background: #fff; color: #251b17; font-size: 16px; outline: 0; transition: border-color .2s, box-shadow .2s; }
-    input:focus { border-color: #ed6a3d; box-shadow: 0 0 0 4px #f36b3a20; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    button, a.button { appearance: none; min-height: 48px; border: 0; border-radius: 999px; padding: 13px 19px; font-size: 16px; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; transition: transform .18s, box-shadow .18s, opacity .18s; touch-action: manipulation; }
-    button:hover, a.button:hover { transform: translateY(-2px); }
-    button:focus-visible, a.button:focus-visible { outline: 3px solid #251b17; outline-offset: 3px; }
-    button:disabled { opacity: .55; cursor: wait; transform: none; }
-    button { background: #ef5b2a; color: white; box-shadow: 0 10px 24px #ee5a2a35; } button.secondary { background: #f2e4dc; color: #4a3126; box-shadow: none; }
-    .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    #status { min-height: 24px; margin: 14px 0 0; }
-    #result, .usage { margin-top: 16px; padding: 18px; border: 1px solid #f3d8c8; border-radius: 18px; background: #fff3eb; line-height: 1.65; }
-    #result strong { display: block; margin-bottom: 4px; font-size: 1.3rem; }
-    details { margin-top: 16px; border-top: 1px solid #ead9cf; padding-top: 14px; }
-    summary { cursor: pointer; font-weight: 800; color: #9c3819; }
-    details ol { padding-left: 22px; color: #614b40; line-height: 1.65; }
-    details a, .usage a { color: #a13b1d; font-weight: 700; }
-    .api-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
-    .api-row button { min-width: 94px; box-shadow: none; }
-    .check { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #715a50; font-size: .88rem; font-weight: 500; }
-    .check input { width: 18px; min-height: 18px; margin: 0; }
-    .meter { height: 8px; margin: 9px 0; overflow: hidden; border-radius: 99px; background: #ead8ce; }
-    .meter span { display: block; width: 0; height: 100%; background: #ef5b2a; transition: width .2s; }
-    .suggestions { margin-top: 10px; }
-    .suggestions-label { display: block; margin-bottom: 8px; color: #715a50; font-size: .84rem; font-weight: 700; }
-    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
-    .chip { min-height: 34px; padding: 7px 11px; border: 1px solid #e2c8ba; background: #fff9f5; color: #5b3d30; box-shadow: none; font-size: .86rem; font-weight: 700; }
-    .chip:hover, .chip[aria-pressed="true"] { border-color: #ef5b2a; background: #ef5b2a; color: #fff; }
-    select { width: 100%; min-height: 48px; margin-top: 7px; padding: 11px 38px 11px 14px; border: 1px solid #dac6bb; border-radius: 13px; background: #fff; color: #251b17; font-size: 16px; }
-    [hidden] { display: none !important; }
-    @media (max-width: 820px) { .shell { min-height: auto; grid-template-columns: 1fr; gap: 20px; padding: 24px 18px 36px; } .intro { padding: 10px 4px 0; } h1 { max-width: 620px; } .steps { grid-template-columns: repeat(3, 1fr); gap: 8px; } .steps li { align-items: flex-start; font-size: .88rem; } main { border-radius: 24px; } }
-    @media (max-width: 560px) { .shell { padding-inline: 12px; } .steps { grid-template-columns: 1fr; } .steps li { align-items: center; } .row { grid-template-columns: 1fr; gap: 0; } .actions { display: grid; grid-template-columns: 1fr; } button, a.button { width: 100%; } main { padding: 20px 16px; border-radius: 22px; } }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
-  </style>
+  <link rel="stylesheet" href="./styles.css?v=20260722-1">
 </head>
 <body>
   <div class="shell">
-  <header class="intro">
-    <span class="eyebrow">Nearby food picker</span>
-    <h1>今天，<span>吃什麼？</span></h1>
-    <p class="lead">不用再想半天。使用目前位置搜尋附近餐廳，幾秒鐘幫你抽出一間。</p>
-    <ol class="steps"><li><b>1</b>允許定位</li><li><b>2</b>設定條件</li><li><b>3</b>抽一間出發</li></ol>
-  </header>
-  <main>
-    <h2 class="card-title">附近餐廳抽籤</h2>
-    <p>手機與電腦都能用；定位不可用時，也可以手動輸入城市、區域或地址。</p>
-    <div class="api-row">
-      <label>你的 Google Maps API key<input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…"></label>
-      <button id="applyKey" class="secondary" type="button">套用</button>
-    </div>
-    <label class="check"><input id="rememberKey" type="checkbox">只在這台裝置記住 API key</label>
-    <details>
-      <summary>如何建立並安全設定免費用量？</summary>
-      <ol>
-        <li>在 <a href="https://console.cloud.google.com/google/maps-apis/overview" target="_blank" rel="noopener">Google Cloud Console</a> 建立專案並啟用帳單。</li>
-        <li>啟用 <strong>Maps JavaScript API</strong> 與 <strong>Places API (New)</strong>。</li>
-        <li>建立 API key，Application restriction 選 <strong>Websites</strong>，加入 <code>https://xixa3333.github.io/*</code>。Google Places 實際收到的是 GitHub Pages 網域來源，限制到儲存庫子路徑會被拒絕。</li>
-        <li>API restrictions 只允許上述兩個 API，並在 Quotas 設定每日上限與帳單預算通知。</li>
-        <li>Google 依 SKU 提供每月免費用量，額度可能調整；請查看<a href="https://developers.google.com/maps/billing-and-pricing/pricing" target="_blank" rel="noopener">官方定價頁</a>。</li>
-      </ol>
-    </details>
-    <label>位置<input id="location" autocomplete="street-address" placeholder="定位中，或輸入城市／區域／地址"></label>
-    <label>想吃什麼<input id="keyword" placeholder="例如：火鍋、咖啡（可留空）"></label>
-    <div class="suggestions" aria-label="熱門食物推薦">
-      <span class="suggestions-label">熱門搜尋，點一下直接帶入</span>
-      <div class="chips">
-        <button class="chip" type="button" data-keyword="牛肉麵" aria-pressed="false">牛肉麵</button>
-        <button class="chip" type="button" data-keyword="湯麵" aria-pressed="false">湯麵</button>
-        <button class="chip" type="button" data-keyword="滷肉飯" aria-pressed="false">滷肉飯</button>
-        <button class="chip" type="button" data-keyword="火鍋" aria-pressed="false">火鍋</button>
-        <button class="chip" type="button" data-keyword="燒肉" aria-pressed="false">燒肉</button>
-        <button class="chip" type="button" data-keyword="早午餐" aria-pressed="false">早午餐</button>
-        <button class="chip" type="button" data-keyword="咖啡" aria-pressed="false">咖啡</button>
-        <button class="chip" type="button" data-keyword="甜點" aria-pressed="false">甜點</button>
-        <button class="chip" type="button" data-keyword="素食" aria-pressed="false">素食</button>
-        <button class="chip" type="button" data-keyword="宵夜" aria-pressed="false">宵夜</button>
+    <header class="intro">
+      <span class="eyebrow">Nearby food picker</span>
+      <h1>今天，<span>吃什麼？</span></h1>
+      <p class="lead">不用再想半天。使用目前位置搜尋附近餐廳，幾秒鐘幫你抽出一間。</p>
+      <ol class="steps"><li><b>1</b>允許定位</li><li><b>2</b>設定條件</li><li><b>3</b>抽一間出發</li></ol>
+    </header>
+    <main>
+      <h2 class="card-title">附近餐廳抽籤</h2>
+      <p>手機與電腦都能用；定位不可用時，也可以手動輸入城市、區域或地址。</p>
+
+      <section class="api-panel" aria-labelledby="api-title">
+        <h3 id="api-title">連接 Google Places</h3>
+        <div class="api-row">
+          <label>你的 Google Maps API key<input id="apiKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="AIza…"></label>
+          <button id="applyKey" class="secondary" type="button">套用</button>
+        </div>
+        <label class="check"><input id="rememberKey" type="checkbox">只在這台裝置記住 API key</label>
+        <p class="privacy-note">預設只保留到關閉分頁；勾選後才儲存在此裝置。本站不會把 key 傳到自己的伺服器或 GitHub。</p>
+        <details>
+          <summary>如何建立並安全設定免費用量？</summary>
+          <ol>
+            <li>在 <a href="https://console.cloud.google.com/google/maps-apis/overview" target="_blank" rel="noopener noreferrer">Google Cloud Console</a> 建立專案並啟用帳單。</li>
+            <li>啟用 <strong>Maps JavaScript API</strong> 與 <strong>Places API (New)</strong>；不需要 Geocoding API。</li>
+            <li>建立 API key，Website restriction 加入 <code>https://xixa3333.github.io/*</code>。</li>
+            <li>API restrictions 只允許上述兩個 API，並設定每日配額與帳單預算通知。</li>
+            <li>價格可能調整，請查看<a href="https://developers.google.com/maps/billing-and-pricing/pricing" target="_blank" rel="noopener noreferrer">官方定價頁</a>。</li>
+          </ol>
+        </details>
+      </section>
+
+      <label>位置<input id="location" autocomplete="street-address" placeholder="定位中，或輸入城市／區域／地址"></label>
+      <label>想吃什麼<input id="keyword" placeholder="例如：火鍋、咖啡（可留空）"></label>
+      <div class="suggestions" aria-label="熱門食物推薦">
+        <span class="suggestions-label">熱門搜尋，點一下直接帶入</span>
+        <div class="chips">
+          <button class="chip" type="button" data-keyword="牛肉麵" aria-pressed="false">牛肉麵</button><button class="chip" type="button" data-keyword="湯麵" aria-pressed="false">湯麵</button><button class="chip" type="button" data-keyword="滷肉飯" aria-pressed="false">滷肉飯</button><button class="chip" type="button" data-keyword="火鍋" aria-pressed="false">火鍋</button><button class="chip" type="button" data-keyword="燒肉" aria-pressed="false">燒肉</button><button class="chip" type="button" data-keyword="早午餐" aria-pressed="false">早午餐</button><button class="chip" type="button" data-keyword="咖啡" aria-pressed="false">咖啡</button><button class="chip" type="button" data-keyword="甜點" aria-pressed="false">甜點</button><button class="chip" type="button" data-keyword="素食" aria-pressed="false">素食</button><button class="chip" type="button" data-keyword="宵夜" aria-pressed="false">宵夜</button>
+        </div>
       </div>
-    </div>
-    <div class="row">
-      <label>最低評分<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
-      <label>半徑（公尺）<input id="radius" type="number" min="100" max="20000" value="3000"></label>
-    </div>
-    <div class="row">
-      <label>最低價位
-        <select id="minPrice">
-          <option value="0">不限</option><option value="1">$ 便宜以上</option><option value="2">$$ 中等以上</option><option value="3">$$$ 昂貴以上</option><option value="4">$$$$ 非常昂貴</option>
-        </select>
-      </label>
-      <label>最高價位
-        <select id="maxPrice">
-          <option value="4">不限</option><option value="0">免費</option><option value="1">$ 便宜以下</option><option value="2">$$ 中等以下</option><option value="3">$$$ 昂貴以下</option>
-        </select>
-      </label>
-    </div>
-    <label class="check"><input id="includeUnknownPrice" type="checkbox">價格篩選時仍包含未提供價位的餐廳</label>
-    <div class="actions">
-      <button id="locate" class="secondary" type="button">重新定位</button>
-      <button id="search" type="button">幫我抽一間</button>
-    </div>
-    <p id="status" role="status">正在要求定位權限…</p>
-    <aside class="usage">
-      <strong>本機用量估算</strong>
-      <div id="usageText">本月這台裝置透過本網站發出 0 次 Places 請求</div>
-      <div class="meter" aria-hidden="true"><span id="usageBar"></span></div>
-      <label>本機警告門檻<input id="usageLimit" type="number" min="1" step="1" value="1000"></label>
-      <small id="resetText"></small><br>
-      <a href="https://console.cloud.google.com/google/maps-apis/metrics" target="_blank" rel="noopener">查看 Google 帳戶的官方總用量</a>
-    </aside>
-    <section id="result" hidden></section>
-  </main>
+      <div class="row">
+        <label>最低評分<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
+        <label>半徑（公尺）<input id="radius" type="number" min="100" max="20000" value="3000"></label>
+      </div>
+      <div class="row">
+        <label>最低價位<select id="minPrice"><option value="0">不限</option><option value="1">$ 便宜以上</option><option value="2">$$ 中等以上</option><option value="3">$$$ 昂貴以上</option><option value="4">$$$$ 非常昂貴</option></select></label>
+        <label>最高價位<select id="maxPrice"><option value="4">不限</option><option value="0">免費</option><option value="1">$ 便宜以下</option><option value="2">$$ 中等以下</option><option value="3">$$$ 昂貴以下</option></select></label>
+      </div>
+      <label class="check"><input id="includeUnknownPrice" type="checkbox">價格篩選時仍包含未提供價位的餐廳</label>
+      <div class="actions"><button id="locate" class="secondary" type="button">重新定位</button><button id="search" type="button">幫我抽一間</button></div>
+      <p id="status" role="status" aria-live="polite">正在要求定位權限…</p>
+      <aside class="usage">
+        <strong>本機用量估算</strong><div id="usageText">本月這台裝置透過本網站發出 0 次 Places 請求</div>
+        <div class="meter" aria-hidden="true"><span id="usageBar"></span></div>
+        <label>本機警告門檻<input id="usageLimit" type="number" min="1" step="1" value="1000"></label>
+        <small id="resetText"></small><br><a href="https://console.cloud.google.com/google/maps-apis/metrics" target="_blank" rel="noopener noreferrer">查看 Google 帳戶的官方總用量</a>
+      </aside>
+      <section id="result" aria-live="polite" hidden></section>
+      <small id="appVersion" class="version"></small>
+    </main>
   </div>
-  <script src="app.js"></script>
+  <script type="module" src="./js/app.js?v=20260722-1"></script>
 </body>
 </html>
