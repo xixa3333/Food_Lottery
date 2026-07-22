@@ -14,23 +14,23 @@ function monthId(date = new Date()) {
 function readUsage() {
   try {
     const value = JSON.parse(localStorage.getItem(USAGE_KEY));
-    if (value?.month === monthId()) return { month: value.month, places: Number(value.places) || 0, geocoding: Number(value.geocoding) || 0 };
+    if (value?.month === monthId()) return { month: value.month, places: (Number(value.places) || 0) + (Number(value.geocoding) || 0) };
   } catch (_) { /* Start a clean local counter. */ }
-  return { month: monthId(), places: 0, geocoding: 0 };
+  return { month: monthId(), places: 0 };
 }
 
-function addUsage(service) {
+function addUsage() {
   const usage = readUsage();
-  usage[service] += 1;
+  usage.places += 1;
   localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
   renderUsage();
 }
 
 function renderUsage() {
   const usage = readUsage();
-  const total = usage.places + usage.geocoding;
+  const total = usage.places;
   const limit = Math.max(1, Number($("usageLimit").value) || 1000);
-  $("usageText").textContent = `本月這台裝置：Places 搜尋 ${usage.places} 次、地址解析 ${usage.geocoding} 次`;
+  $("usageText").textContent = `本月這台裝置透過本網站發出 ${usage.places} 次 Places 請求`;
   $("usageBar").style.width = `${Math.min(100, total / limit * 100)}%`;
   const now = new Date();
   const reset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -93,21 +93,30 @@ async function locateDevice() {
   );
 }
 
-async function geocodeAddress(address) {
+async function resolveAddress(address) {
   await loadGoogleMaps();
-  addUsage("geocoding");
-  const geocoder = new google.maps.Geocoder();
-  const { results } = await geocoder.geocode({ address, region: "TW", language: "zh-TW" });
-  if (!results.length) throw new Error(`找不到位置：${address}`);
-  const point = results[0].geometry.location;
-  return [{ lat: point.lat(), lng: point.lng() }, results[0].formatted_address];
+  const { Place } = await google.maps.importLibrary("places");
+  addUsage();
+  const { places } = await Place.searchByText({
+    textQuery: address,
+    fields: ["displayName", "formattedAddress", "location"],
+    maxResultCount: 1,
+    language: "zh-TW",
+    region: "TW"
+  });
+  const match = places[0];
+  if (!match?.location) throw new Error(`找不到位置：${address}`);
+  return [
+    { lat: match.location.lat(), lng: match.location.lng() },
+    match.formattedAddress || match.displayName || address
+  ];
 }
 
 async function searchGooglePlaces(center, radius, keyword) {
   await loadGoogleMaps();
   const { Place, SearchNearbyRankPreference, SearchByTextRankPreference } = await google.maps.importLibrary("places");
   const fields = ["displayName", "location", "rating", "priceLevel", "googleMapsURI", "primaryTypeDisplayName"];
-  addUsage("places");
+  addUsage();
   if (keyword) {
     const { places } = await Place.searchByText({
       textQuery: `${keyword} 餐廳`, fields, locationRestriction: { center, radius },
@@ -145,7 +154,7 @@ async function chooseRestaurant() {
   try {
     const [center, label] = state.coordinates && locationText === state.detectedLabel
       ? [state.coordinates, state.detectedLabel]
-      : await geocodeAddress(locationText);
+      : await resolveAddress(locationText);
     const places = await searchGooglePlaces(center, radius, keyword);
     const accuracyAllowance = state.coordinates && locationText === state.detectedLabel ? Math.ceil(state.locationAccuracy) : 0;
     const maximumDistance = radius + accuracyAllowance;
