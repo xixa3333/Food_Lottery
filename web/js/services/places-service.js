@@ -1,4 +1,4 @@
-import { coordinatesOf } from "../domain/search.js?v=20260722-2";
+import { coordinatesOf } from "../domain/search.js?v=20260722-3";
 
 export class GooglePlacesService {
   constructor({ loader, apiKeyProvider, usageStore }) {
@@ -30,7 +30,7 @@ export class GooglePlacesService {
 
   async searchRestaurants({ center, radius, keyword }) {
     const { Place, SearchNearbyRankPreference, SearchByTextRankPreference } = await this.library();
-    const fields = ["displayName", "location", "rating", "priceLevel", "googleMapsURI", "primaryTypeDisplayName"];
+    const fields = ["displayName", "location", "rating", "priceLevel", "googleMapsURI", "primaryTypeDisplayName", "businessStatus", "currentOpeningHours", "utcOffsetMinutes"];
     this.usageStore.increment();
     if (keyword) {
       const { places } = await Place.searchByText({

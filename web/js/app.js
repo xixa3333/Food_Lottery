@@ -1,12 +1,12 @@
-import { APP_VERSION, SEARCH_LIMITS, STORAGE_KEYS } from "./config.js?v=20260722-2";
-import { searchRestaurants } from "./application/search-restaurants.js?v=20260722-2";
-import { ApiKeyStore } from "./services/key-store.js?v=20260722-2";
-import { UsageStore } from "./services/usage-store.js?v=20260722-2";
-import { BrowserLocationService } from "./services/location-service.js?v=20260722-2";
-import { GoogleMapsLoader } from "./services/google-maps-loader.js?v=20260722-2";
-import { GooglePlacesService } from "./services/places-service.js?v=20260722-2";
-import { friendlyError } from "./ui/errors.js?v=20260722-2";
-import { AppView } from "./ui/view.js?v=20260722-2";
+import { APP_VERSION, SEARCH_LIMITS, STORAGE_KEYS } from "./config.js?v=20260722-3";
+import { searchRestaurants } from "./application/search-restaurants.js?v=20260722-3";
+import { ApiKeyStore } from "./services/key-store.js?v=20260722-3";
+import { UsageStore } from "./services/usage-store.js?v=20260722-3";
+import { BrowserLocationService } from "./services/location-service.js?v=20260722-3";
+import { GoogleMapsLoader } from "./services/google-maps-loader.js?v=20260722-3";
+import { GooglePlacesService } from "./services/places-service.js?v=20260722-3";
+import { friendlyError } from "./ui/errors.js?v=20260722-3";
+import { AppView } from "./ui/view.js?v=20260722-3";
 
 const view = new AppView(document);
 const keyStore = new ApiKeyStore({ sessionStorage, localStorage, key: STORAGE_KEYS.apiKey });

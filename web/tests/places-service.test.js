@@ -26,5 +26,7 @@ test("keyword and nearby searches choose their Places API methods", async () => 
   assert.deepEqual(requests.map(x => x[0]), ["text", "near"]);
   assert.equal(requests[0][1].locationBias.radius, 100);
   assert.equal(requests[0][1].locationRestriction, undefined);
+  assert.ok(requests[0][1].fields.includes("currentOpeningHours"));
+  assert.ok(requests[0][1].fields.includes("utcOffsetMinutes"));
   assert.equal(count(), 2);
 });

@@ -30,6 +30,8 @@ button.secondary { background: #f2e4dc; color: #4a3126; box-shadow: none; }
 .api-row button { min-width: 94px; box-shadow: none; }
 .check { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #715a50; font-size: .88rem; font-weight: 500; }
 .check input { width: 18px; min-height: 18px; margin: 0; }
+.hours-options { margin: 16px 0; padding: 10px 14px 14px; border: 1px solid #efd9cd; border-radius: 16px; }
+.hours-options legend { padding: 0 6px; font-weight: 800; }
 .privacy-note { margin: 7px 0 0; font-size: .82rem; }
 details { margin-top: 14px; border-top: 1px solid #ead9cf; padding-top: 12px; }
 summary { cursor: pointer; font-weight: 800; color: #9c3819; }

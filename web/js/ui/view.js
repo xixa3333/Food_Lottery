@@ -1,5 +1,5 @@
-import { PRICE_LABELS } from "../config.js?v=20260722-2";
-import { priceValue } from "../domain/search.js?v=20260722-2";
+import { PRICE_LABELS } from "../config.js?v=20260722-3";
+import { priceValue } from "../domain/search.js?v=20260722-3";
 
 export class AppView {
   constructor(document) {
@@ -23,7 +23,10 @@ export class AppView {
         radius: this.byId("radius").value,
         minPrice: this.byId("minPrice").value,
         maxPrice: this.byId("maxPrice").value,
-        includeUnknownPrice: this.byId("includeUnknownPrice").checked
+        includeUnknownPrice: this.byId("includeUnknownPrice").checked,
+        includeClosingSoon: this.byId("includeClosingSoon").checked,
+        includeClosed: this.byId("includeClosed").checked,
+        includeUnknownHours: this.byId("includeUnknownHours").checked
       }
     };
   }
@@ -46,7 +49,8 @@ export class AppView {
       `直線距離：約 ${Math.round(result.distance)} 公尺`,
       `類型：${result.place.primaryTypeDisplayName || "餐廳"}`,
       `評分：${Number.isFinite(result.place.rating) ? `${result.place.rating} / 5` : "未提供"}`,
-      `價位：${price === null ? "未提供" : PRICE_LABELS[price]}`
+      `價位：${price === null ? "未提供" : PRICE_LABELS[price]}`,
+      `營業狀態：${result.opening.label}`
     ];
     for (const line of lines) {
       section.append(this.document.createTextNode(line), this.document.createElement("br"));

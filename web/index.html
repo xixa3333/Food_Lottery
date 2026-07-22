@@ -12,7 +12,7 @@
   <meta property="og:image" content="https://xixa3333.github.io/Food_Lottery/og.png">
   <meta property="og:type" content="website">
   <title>Food Lottery 食物抽籤器</title>
-  <link rel="stylesheet" href="./styles.css?v=20260722-2">
+  <link rel="stylesheet" href="./styles.css?v=20260722-3">
 </head>
 <body>
   <div class="shell">
@@ -63,6 +63,11 @@
         <label>最高價位<select id="maxPrice"><option value="4">不限</option><option value="0">免費</option><option value="1">$ 便宜以下</option><option value="2">$$ 中等以下</option><option value="3">$$$ 昂貴以下</option></select></label>
       </div>
       <label class="check"><input id="includeUnknownPrice" type="checkbox">價格篩選時仍包含未提供價位的餐廳</label>
+      <fieldset class="hours-options"><legend>營業狀態（預設只抽目前營業中的店家）</legend>
+        <label class="check"><input id="includeClosingSoon" type="checkbox">包含 30 分鐘內即將打烊</label>
+        <label class="check"><input id="includeClosed" type="checkbox">包含目前休息／已打烊</label>
+        <label class="check"><input id="includeUnknownHours" type="checkbox">包含無法確認營業狀態</label>
+      </fieldset>
       <div class="actions"><button id="locate" class="secondary" type="button">重新定位</button><button id="search" type="button">幫我抽一間</button></div>
       <p id="status" role="status" aria-live="polite">正在要求定位權限…</p>
       <aside class="usage">
@@ -75,6 +80,6 @@
       <small id="appVersion" class="version"></small>
     </main>
   </div>
-  <script type="module" src="./js/app.js?v=20260722-2"></script>
+  <script type="module" src="./js/app.js?v=20260722-3"></script>
 </body>
 </html>
