@@ -1,4 +1,4 @@
-import { filterPlaces, validateCriteria } from "../domain/search.js?v=20260722-1";
+import { filterPlaces, validateCriteria } from "../domain/search.js?v=20260722-2";
 
 export async function searchRestaurants(request, dependencies) {
   const validationError = validateCriteria(request.criteria, dependencies.limits);

@@ -1,4 +1,4 @@
-import { coordinatesOf } from "../domain/search.js?v=20260722-1";
+import { coordinatesOf } from "../domain/search.js?v=20260722-2";
 
 export class GooglePlacesService {
   constructor({ loader, apiKeyProvider, usageStore }) {
@@ -36,7 +36,10 @@ export class GooglePlacesService {
       const { places } = await Place.searchByText({
         textQuery: `${keyword} 餐廳`,
         fields,
-        locationRestriction: { center, radius },
+        // Text Search 在部分 Maps JavaScript API 版本會拒絕圓形
+        // locationRestriction；用官方支援的圓形 locationBias，並由 domain
+        // 層再次計算距離，確保超出半徑的結果不會顯示。
+        locationBias: { center, radius },
         includedType: "restaurant",
         maxResultCount: 20,
         rankPreference: SearchByTextRankPreference.RELEVANCE,

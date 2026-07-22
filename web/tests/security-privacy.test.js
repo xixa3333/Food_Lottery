@@ -18,7 +18,7 @@ test("source contains no key, Geocoder construction, or unsafe HTML sink", async
 test("page defines CSP, versioned assets, and safe external links", async () => {
   const html = await readFile(join(web, "index.html"), "utf8");
   assert.match(html, /Content-Security-Policy/);
-  assert.match(html, /js\/app\.js\?v=20260722-1/);
+  assert.match(html, /js\/app\.js\?v=20260722-2/);
   assert.doesNotMatch(html, /<script[^>]+src="\.\/app\.js"/);
   for (const tag of html.match(/<a\b[^>]*target="_blank"[^>]*>/g) || []) assert.match(tag, /rel="noopener noreferrer"/);
 });
