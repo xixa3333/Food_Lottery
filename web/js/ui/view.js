@@ -1,5 +1,5 @@
-import { PRICE_LABELS } from "../config.js?v=20260722-1";
-import { priceValue } from "../domain/search.js?v=20260722-1";
+import { PRICE_LABELS } from "../config.js?v=20260722-2";
+import { priceValue } from "../domain/search.js?v=20260722-2";
 
 export class AppView {
   constructor(document) {

@@ -24,6 +24,7 @@ test("keyword and nearby searches choose their Places API methods", async () => 
   await service.searchRestaurants({ center: { lat: 25, lng: 121 }, radius: 100, keyword: "牛肉麵" });
   await service.searchRestaurants({ center: { lat: 25, lng: 121 }, radius: 100, keyword: "" });
   assert.deepEqual(requests.map(x => x[0]), ["text", "near"]);
-  assert.equal(requests[0][1].locationRestriction.radius, 100);
+  assert.equal(requests[0][1].locationBias.radius, 100);
+  assert.equal(requests[0][1].locationRestriction, undefined);
   assert.equal(count(), 2);
 });
