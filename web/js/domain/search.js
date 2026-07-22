@@ -1,4 +1,5 @@
 const PRICE_VALUES = Object.freeze({ FREE: 0, INEXPENSIVE: 1, MODERATE: 2, EXPENSIVE: 3, VERY_EXPENSIVE: 4 });
+export const CLOSING_SOON_MINUTES = 30;
 
 export function priceValue(level) {
   if (level === undefined || level === null || level === "") return null;
@@ -44,7 +45,35 @@ export function validateCriteria(criteria, limits) {
   return null;
 }
 
-export function filterPlaces(places, center, criteria, accuracyAllowance = 0) {
+function pointMinutes(point) {
+  return Number(point.day) * 1440 + Number(point.hour) * 60 + Number(point.minute || 0);
+}
+
+export function openingStatus(place, now = new Date()) {
+  if (place.businessStatus && place.businessStatus !== "OPERATIONAL") return { type: "closed", label: "休息／停止營業" };
+  const periods = place.currentOpeningHours?.periods;
+  if (!Array.isArray(periods) || !Number.isFinite(Number(place.utcOffsetMinutes))) return { type: "unknown", label: "無法確認營業狀態" };
+  const local = new Date(now.getTime() + Number(place.utcOffsetMinutes) * 60000);
+  const current = local.getUTCDay() * 1440 + local.getUTCHours() * 60 + local.getUTCMinutes();
+  for (const period of periods) {
+    if (!period?.open) continue;
+    const open = pointMinutes(period.open);
+    if (!period.close) return { type: "open", label: "營業中（24 小時）" };
+    let close = pointMinutes(period.close);
+    if (close <= open) close += 10080;
+    for (const minute of [current, current + 10080]) {
+      if (minute >= open && minute < close) {
+        const remaining = close - minute;
+        return remaining <= CLOSING_SOON_MINUTES
+          ? { type: "closingSoon", label: `即將打烊（約 ${remaining} 分鐘）`, minutesUntilClose: remaining }
+          : { type: "open", label: "營業中", minutesUntilClose: remaining };
+      }
+    }
+  }
+  return { type: "closed", label: "目前休息／已打烊" };
+}
+
+export function filterPlaces(places, center, criteria, accuracyAllowance = 0, now = new Date()) {
   const radius = Number(criteria.radius);
   const maximumDistance = radius + Math.max(0, Number(accuracyAllowance) || 0);
   const minRating = Number(criteria.minRating);
@@ -53,12 +82,17 @@ export function filterPlaces(places, center, criteria, accuracyAllowance = 0) {
   const priceFilterActive = minPrice > 0 || maxPrice < 4;
 
   return places
-    .map((place) => ({ place, distance: distanceMeters(center, place.location) }))
-    .filter(({ place, distance }) => {
+    .map((place) => ({ place, distance: distanceMeters(center, place.location), opening: openingStatus(place, now) }))
+    .filter(({ place, distance, opening }) => {
       if (distance === null || distance > maximumDistance) return false;
       if (minRating > 0 && !(Number(place.rating) >= minRating)) return false;
-      if (!priceFilterActive) return true;
-      const price = priceValue(place.priceLevel);
-      return price === null ? Boolean(criteria.includeUnknownPrice) : price >= minPrice && price <= maxPrice;
+      if (opening.type === "closingSoon" && !criteria.includeClosingSoon) return false;
+      if (opening.type === "closed" && !criteria.includeClosed) return false;
+      if (opening.type === "unknown" && !criteria.includeUnknownHours) return false;
+      if (priceFilterActive) {
+        const price = priceValue(place.priceLevel);
+        if (price === null ? !criteria.includeUnknownPrice : price < minPrice || price > maxPrice) return false;
+      }
+      return true;
     });
 }
