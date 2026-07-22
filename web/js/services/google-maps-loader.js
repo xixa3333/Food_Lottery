@@ -1,4 +1,4 @@
-import { GOOGLE_MAPS_SCRIPT } from "../config.js?v=20260722-4";
+import { GOOGLE_MAPS_SCRIPT } from "../config.js?v=20260722-5";
 
 export class GoogleMapsLoader {
   constructor({ window, document }) {

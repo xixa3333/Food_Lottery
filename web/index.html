@@ -12,7 +12,7 @@
   <meta property="og:image" content="https://xixa3333.github.io/Food_Lottery/og.png">
   <meta property="og:type" content="website">
   <title>Food Lottery 食物抽籤器</title>
-  <link rel="stylesheet" href="./styles.css?v=20260722-4">
+  <link rel="stylesheet" href="./styles.css?v=20260722-5">
 </head>
 <body>
   <div class="shell">
@@ -54,6 +54,13 @@
           <button class="chip" type="button" data-keyword="牛肉麵" aria-pressed="false">牛肉麵</button><button class="chip" type="button" data-keyword="湯麵" aria-pressed="false">湯麵</button><button class="chip" type="button" data-keyword="滷肉飯" aria-pressed="false">滷肉飯</button><button class="chip" type="button" data-keyword="火鍋" aria-pressed="false">火鍋</button><button class="chip" type="button" data-keyword="燒肉" aria-pressed="false">燒肉</button><button class="chip" type="button" data-keyword="早午餐" aria-pressed="false">早午餐</button><button class="chip" type="button" data-keyword="咖啡" aria-pressed="false">咖啡</button><button class="chip" type="button" data-keyword="甜點" aria-pressed="false">甜點</button><button class="chip" type="button" data-keyword="素食" aria-pressed="false">素食</button><button class="chip" type="button" data-keyword="宵夜" aria-pressed="false">宵夜</button>
         </div>
       </div>
+      <details class="type-picker"><summary>餐飲類型 <span id="typeCount"></span></summary>
+        <div class="type-tools"><input id="typeSearch" type="search" placeholder="搜尋類型，例如：台灣、sushi">
+          <div class="type-actions"><button id="typesAll" class="secondary" type="button">全選</button><button id="typesPopular" class="secondary" type="button">常用</button><button id="typesClear" class="secondary" type="button">清除</button></div>
+        </div>
+        <div id="typeList" class="type-list"></div>
+        <small>清單依 Google Places Table A「Food and Drink」維護；Nearby Search 每 50 種分一批。輸入食物關鍵字時，類型會在結果回傳後再次篩選。</small>
+      </details>
       <div class="row">
         <label>最低評分<input id="rating" type="number" min="0" max="5" step="0.1" value="0"></label>
         <label>半徑（公尺）<input id="radius" type="number" min="100" max="20000" value="3000"></label>
@@ -80,6 +87,6 @@
       <small id="appVersion" class="version"></small>
     </main>
   </div>
-  <script type="module" src="./js/app.js?v=20260722-4"></script>
+  <script type="module" src="./js/app.js?v=20260722-5"></script>
 </body>
 </html>

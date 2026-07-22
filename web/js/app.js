@@ -1,12 +1,12 @@
-import { APP_VERSION, SEARCH_LIMITS, STORAGE_KEYS } from "./config.js?v=20260722-4";
-import { pickCandidate, searchRestaurants } from "./application/search-restaurants.js?v=20260722-4";
-import { ApiKeyStore } from "./services/key-store.js?v=20260722-4";
-import { UsageStore } from "./services/usage-store.js?v=20260722-4";
-import { BrowserLocationService } from "./services/location-service.js?v=20260722-4";
-import { GoogleMapsLoader } from "./services/google-maps-loader.js?v=20260722-4";
-import { GooglePlacesService } from "./services/places-service.js?v=20260722-4";
-import { friendlyError } from "./ui/errors.js?v=20260722-4";
-import { AppView } from "./ui/view.js?v=20260722-4";
+import { APP_VERSION, SEARCH_LIMITS, STORAGE_KEYS } from "./config.js?v=20260722-5";
+import { pickCandidate, searchRestaurants } from "./application/search-restaurants.js?v=20260722-5";
+import { ApiKeyStore } from "./services/key-store.js?v=20260722-5";
+import { UsageStore } from "./services/usage-store.js?v=20260722-5";
+import { BrowserLocationService } from "./services/location-service.js?v=20260722-5";
+import { GoogleMapsLoader } from "./services/google-maps-loader.js?v=20260722-5";
+import { GooglePlacesService } from "./services/places-service.js?v=20260722-5";
+import { friendlyError } from "./ui/errors.js?v=20260722-5";
+import { AppView } from "./ui/view.js?v=20260722-5";
 
 const view = new AppView(document);
 const keyStore = new ApiKeyStore({ sessionStorage, localStorage, key: STORAGE_KEYS.apiKey });
@@ -54,20 +54,27 @@ async function search() {
     view.byId("apiKey").focus();
     return;
   }
+  const request = view.readSearchRequest(state);
+  if (!request.criteria.selectedTypes.length) {
+    view.setStatus("請至少選擇一種餐飲類型。");
+    return;
+  }
   state.candidates = [];
   state.resultContext = null;
   state.selectedId = null;
   view.byId("reroll").hidden = true;
   view.setBusy(true);
   view.setStatus("正在使用 Google Places 搜尋附近餐廳…");
+  const usageBefore = usageStore.read().places;
   try {
-    const result = await searchRestaurants(view.readSearchRequest(state), { places, limits: SEARCH_LIMITS, random: Math.random });
+    const result = await searchRestaurants(request, { places, limits: SEARCH_LIMITS, random: Math.random });
     state.candidates = result.candidates;
     state.resultContext = { count: result.count, centerLabel: result.centerLabel, accuracyAllowance: result.accuracyAllowance };
     state.selectedId = result.place.id || null;
     view.renderResult(result);
     const note = result.accuracyAllowance ? `（已計入定位誤差約 ${result.accuracyAllowance} 公尺）` : "";
-    view.setStatus(`嚴格範圍內找到 ${result.count} 間符合條件的餐廳${note}`);
+    const requestCount = usageStore.read().places - usageBefore;
+    view.setStatus(`嚴格範圍內找到 ${result.count} 間符合條件的餐廳${note}；本次使用 ${requestCount} 次 Places 請求。`);
   } catch (error) {
     view.setStatus(friendlyError(error));
   } finally {
@@ -107,8 +114,14 @@ view.byId("keyword").addEventListener("input", () => {
   document.querySelectorAll(".chip").forEach((chip) => chip.setAttribute("aria-pressed", String(chip.dataset.keyword === view.byId("keyword").value.trim())));
 });
 document.querySelectorAll(".chip").forEach((button) => button.addEventListener("click", () => selectSuggestion(button)));
+view.byId("typeSearch").addEventListener("input", (event) => view.filterTypeOptions(event.target.value));
+view.byId("typesAll").addEventListener("click", () => view.setTypeSelection("all"));
+view.byId("typesPopular").addEventListener("click", () => view.setTypeSelection("popular"));
+view.byId("typesClear").addEventListener("click", () => view.setTypeSelection("clear"));
+view.byId("typeList").addEventListener("change", () => view.updateTypeCount());
 
 view.byId("apiKey").value = keyStore.read();
+view.renderTypeSelector();
 view.byId("rememberKey").checked = keyStore.isRemembered();
 view.byId("usageLimit").value = localStorage.getItem(STORAGE_KEYS.usageLimit) || "1000";
 view.byId("appVersion").textContent = `版本 ${APP_VERSION}`;

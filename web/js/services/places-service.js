@@ -1,4 +1,4 @@
-import { coordinatesOf } from "../domain/search.js?v=20260722-4";
+import { coordinatesOf } from "../domain/search.js?v=20260722-5";
 
 export function buildSearchAreas(center, radius) {
   const count = radius <= 500 ? 5 : radius <= 1000 ? 9 : 16;
@@ -22,6 +22,12 @@ export function buildSearchAreas(center, radius) {
 function placeKey(place) {
   const point = coordinatesOf(place.location);
   return place.id || `${place.displayName || ""}|${point?.lat || ""}|${point?.lng || ""}`;
+}
+
+function chunks(items, size) {
+  const result = [];
+  for (let index = 0; index < items.length; index += size) result.push(items.slice(index, index + size));
+  return result;
 }
 
 export class GooglePlacesService {
@@ -52,10 +58,10 @@ export class GooglePlacesService {
     return { center, label: match.formattedAddress || match.displayName || query };
   }
 
-  async searchRestaurants({ center, radius, keyword }) {
+  async searchRestaurants({ center, radius, keyword, selectedTypes = [] }) {
     const { Place, SearchNearbyRankPreference, SearchByTextRankPreference } = await this.library();
-    const fields = ["id", "displayName", "location", "rating", "priceLevel", "googleMapsURI", "primaryTypeDisplayName", "businessStatus", "currentOpeningHours", "utcOffsetMinutes"];
-    const searchArea = async (area) => {
+    const fields = ["id", "displayName", "location", "rating", "priceLevel", "googleMapsURI", "primaryType", "types", "primaryTypeDisplayName", "businessStatus", "currentOpeningHours", "utcOffsetMinutes"];
+    const searchArea = async (area, typeBatch = []) => {
       this.usageStore.increment();
       if (keyword) {
       const { places } = await Place.searchByText({
@@ -65,7 +71,6 @@ export class GooglePlacesService {
         // locationRestriction；用官方支援的圓形 locationBias，並由 domain
         // 層再次計算距離，確保超出半徑的結果不會顯示。
         locationBias: area,
-        includedType: "restaurant",
         maxResultCount: 20,
         rankPreference: SearchByTextRankPreference.RELEVANCE,
         language: "zh-TW",
@@ -76,7 +81,7 @@ export class GooglePlacesService {
       const { places } = await Place.searchNearby({
       fields,
       locationRestriction: area,
-      includedPrimaryTypes: ["restaurant", "cafe", "bakery", "meal_takeaway"],
+      includedTypes: typeBatch,
       maxResultCount: 20,
       rankPreference: SearchNearbyRankPreference.POPULARITY,
       language: "zh-TW",
@@ -86,11 +91,16 @@ export class GooglePlacesService {
     };
 
     const areas = buildSearchAreas(center, radius);
-    const first = await searchArea({ center, radius });
-    const batches = [first];
-    // Google 每批最多 20 筆；只有首批滿載時才啟動分區，避免稀疏區域浪費額度。
-    if (first.length >= 20) {
-      for (const area of areas.slice(1)) batches.push(await searchArea(area));
+    const effectiveTypes = selectedTypes.length ? selectedTypes : ["restaurant", "cafe", "bakery", "meal_takeaway"];
+    const typeBatches = keyword ? [[]] : chunks(effectiveTypes, 50);
+    const batches = [];
+    for (const typeBatch of typeBatches) {
+      const first = await searchArea({ center, radius }, typeBatch);
+      batches.push(first);
+      // Google 每批最多 20 筆；只有首批滿載時才啟動分區。
+      if (first.length >= 20) {
+        for (const area of areas.slice(1)) batches.push(await searchArea(area, typeBatch));
+      }
     }
     return [...new Map(batches.flat().map((place) => [placeKey(place), place])).values()];
   }

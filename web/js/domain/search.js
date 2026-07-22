@@ -80,6 +80,7 @@ export function filterPlaces(places, center, criteria, accuracyAllowance = 0, no
   const minPrice = Number(criteria.minPrice);
   const maxPrice = Number(criteria.maxPrice);
   const priceFilterActive = minPrice > 0 || maxPrice < 4;
+  const selectedTypes = new Set(criteria.selectedTypes || []);
 
   return places
     .map((place) => ({ place, distance: distanceMeters(center, place.location), opening: openingStatus(place, now) }))
@@ -89,6 +90,7 @@ export function filterPlaces(places, center, criteria, accuracyAllowance = 0, no
       if (opening.type === "closingSoon" && !criteria.includeClosingSoon) return false;
       if (opening.type === "closed" && !criteria.includeClosed) return false;
       if (opening.type === "unknown" && !criteria.includeUnknownHours) return false;
+      if (selectedTypes.size && ![place.primaryType, ...(place.types || [])].some((type) => selectedTypes.has(type))) return false;
       if (priceFilterActive) {
         const price = priceValue(place.priceLevel);
         if (price === null ? !criteria.includeUnknownPrice : price < minPrice || price > maxPrice) return false;

@@ -1,4 +1,4 @@
-import { filterPlaces, validateCriteria } from "../domain/search.js?v=20260722-4";
+import { filterPlaces, validateCriteria } from "../domain/search.js?v=20260722-5";
 
 export async function searchRestaurants(request, dependencies) {
   const validationError = validateCriteria(request.criteria, dependencies.limits);
@@ -13,7 +13,8 @@ export async function searchRestaurants(request, dependencies) {
   const places = await dependencies.places.searchRestaurants({
     center: resolved.center,
     radius: Number(request.criteria.radius),
-    keyword: request.keyword.trim()
+    keyword: request.keyword.trim(),
+    selectedTypes: request.criteria.selectedTypes
   });
   const accuracy = usesDeviceLocation ? Math.ceil(Math.max(0, Number(request.locationAccuracy) || 0)) : 0;
   const matches = filterPlaces(places, resolved.center, request.criteria, accuracy);

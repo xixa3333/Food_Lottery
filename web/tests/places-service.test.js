@@ -42,3 +42,12 @@ test("dense result automatically partitions and deduplicates by place id", async
   assert.equal(buildSearchAreas({ lat: 25, lng: 121 }, 1000).length, 9);
   assert.equal(buildSearchAreas({ lat: 25, lng: 121 }, 3000).length, 16);
 });
+
+test("Nearby Search splits selected types into API-safe batches of 50", async () => {
+  const requests = [];
+  const api = { Place: { searchNearby: async request => (requests.push(request), { places: [] }) }, SearchNearbyRankPreference: { POPULARITY: "p" } };
+  const { service } = serviceWith(api);
+  const selectedTypes = Array.from({ length: 51 }, (_, index) => `type_${index}`);
+  await service.searchRestaurants({ center: { lat: 25, lng: 121 }, radius: 500, keyword: "", selectedTypes });
+  assert.deepEqual(requests.map(request => request.includedTypes.length), [50, 1]);
+});

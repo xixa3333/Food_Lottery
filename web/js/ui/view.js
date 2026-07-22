@@ -1,5 +1,6 @@
-import { PRICE_LABELS } from "../config.js?v=20260722-4";
-import { priceValue } from "../domain/search.js?v=20260722-4";
+import { PRICE_LABELS } from "../config.js?v=20260722-5";
+import { priceValue } from "../domain/search.js?v=20260722-5";
+import { FOOD_TYPES, POPULAR_FOOD_TYPES } from "../config/food-types.js?v=20260722-5";
 
 export class AppView {
   constructor(document) {
@@ -9,6 +10,47 @@ export class AppView {
 
   setStatus(message) {
     this.byId("status").textContent = message;
+  }
+
+  renderTypeSelector() {
+    const list = this.byId("typeList");
+    list.replaceChildren();
+    for (const group of [...new Set(FOOD_TYPES.map((type) => type.group))]) {
+      const heading = this.document.createElement("strong");
+      heading.className = "type-group-title";
+      heading.textContent = group;
+      list.append(heading);
+      for (const type of FOOD_TYPES.filter((item) => item.group === group)) {
+        const label = this.document.createElement("label");
+        label.className = "type-option";
+        label.dataset.search = `${type.label} ${type.id}`.toLowerCase();
+        const input = this.document.createElement("input");
+        input.type = "checkbox";
+        input.value = type.id;
+        input.checked = true;
+        label.append(input, this.document.createTextNode(type.label));
+        list.append(label);
+      }
+    }
+    this.updateTypeCount();
+  }
+
+  setTypeSelection(mode) {
+    const popular = new Set(POPULAR_FOOD_TYPES);
+    this.document.querySelectorAll("#typeList input").forEach((input) => {
+      input.checked = mode === "all" || (mode === "popular" && popular.has(input.value));
+    });
+    this.updateTypeCount();
+  }
+
+  filterTypeOptions(query) {
+    const term = query.trim().toLowerCase();
+    this.document.querySelectorAll("#typeList .type-option").forEach((label) => { label.hidden = Boolean(term) && !label.dataset.search.includes(term); });
+  }
+
+  updateTypeCount() {
+    const selected = this.document.querySelectorAll("#typeList input:checked").length;
+    this.byId("typeCount").textContent = `已選 ${selected} / ${FOOD_TYPES.length} 種`;
   }
 
   readSearchRequest(state) {
@@ -27,6 +69,7 @@ export class AppView {
         includeClosingSoon: this.byId("includeClosingSoon").checked,
         includeClosed: this.byId("includeClosed").checked,
         includeUnknownHours: this.byId("includeUnknownHours").checked
+        ,selectedTypes: [...this.document.querySelectorAll("#typeList input:checked")].map((input) => input.value)
       }
     };
   }
